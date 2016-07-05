@@ -12,6 +12,7 @@
         <script src="js/THREE.js"></script>
         <script src="js/orbit.js"></script>
         <script src="js/tween.js"></script>
+        <script src="js/stats.min.js"></script>
         <script>
             "use strict";
             
@@ -25,6 +26,10 @@
             var renderer = new THREE.WebGLRenderer();
             document.body.appendChild(renderer.domElement);
             var texLoader = new THREE.TextureLoader();
+            
+            var stats = new Stats();
+            stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.body.appendChild( stats.dom );
             
             // objects
             var eyes = [];
@@ -157,12 +162,14 @@
             
             render();
             function render(e){
+              stats.begin();
                 renderer.render(scene, camera);
+                stats.end();
                 requestAnimationFrame(render);
             }
             
         </script>
-        <div style="position: absolute; z-index: 1; left: 50px; top: 20px; width:400px; height:30px;font-size:2em">
+        <div style="position: absolute; z-index: 1; left: 50px; top: 50px; width:400px; height:30px;font-size:2em">
 	<p>Click/drag to rotate. Mouse wheel to zoom.</p>
 </div>
     </body>
