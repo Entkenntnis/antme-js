@@ -11,6 +11,7 @@
     <body>
         <script src="js/THREE.js"></script>
         <script src="js/orbit.js"></script>
+        <script src="js/tween.js"></script>
         <script>
             "use strict";
             
@@ -19,34 +20,85 @@
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 10000);
             camera.position.z = 100;
+            camera.position.y = 1;
             
             var renderer = new THREE.WebGLRenderer();
             document.body.appendChild(renderer.domElement);
+            var texLoader = new THREE.TextureLoader();
             
-            
-            /*var geometry = new THREE.BoxGeometry( 10, 10, 10 );
-            var material = new THREE.MeshLambertMaterial( {color: 0x00ff00} );
-            var cube = new THREE.Mesh( geometry, material );
-            scene.add( cube );*/
+            // objects
+            var eyes = [];
+            var ant = undefined;
             var objectLoader = new THREE.ObjectLoader();
-				    objectLoader.load("ant.json", function ( obj ) {
+				    objectLoader.load("models/ant.json", function ( obj ) {
+				      obj.children[0].children.forEach(function(o){
+				        o.material = new THREE.MeshPhongMaterial({color:0x0d0d0d});
+				      });
 				      var body = obj.children[0].children[6];
 				      body.material = new THREE.MeshPhongMaterial({color:0xff0000});
+				      ant = obj;
 				     	scene.add( obj);
 				    } );
-				    objectLoader.load("anthill.json", function ( obj ) {
+				    objectLoader.load("models/anthill.json", function ( obj ) {
+				      var earthTexture = texLoader.load( "assets/earth.jpg" );
+				      var mat = new THREE.MeshPhongMaterial({color:0x663300});
+				      mat.map = earthTexture;
+				      obj.children[0].children[1].material = mat;
+				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x000000});
+				      obj.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xff0000});
 				      obj.position.set(60, 0, 0);
 				     	scene.add( obj );
 				    } );
 				    
-				    objectLoader.load("apple.json", function ( obj ) {
+				    objectLoader.load("models/apple.json", function ( obj ) {
+				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x00cc00});
+				      obj.children[0].children[1].material = new THREE.MeshPhongMaterial({color:0x669900});
 				      obj.position.set(-50, 0, 0);
 				     	scene.add( obj );
 				    } );
-				    objectLoader.load("bug.json", function ( obj ) {
+				    objectLoader.load("models/bug.json", function ( obj ) {
+				      obj.children[0].children.forEach(function(o){
+				        o.material = new THREE.MeshPhongMaterial({color:0x000000,specular:0x00dddd});
+				      });
+				      eyes.push(obj.children[0].children[7]);
+				      eyes.push(obj.children[0].children[6]);
 				      obj.position.set(-10, 0, -20);
 				     	scene.add( obj );
 				    } );
+				    
+				    objectLoader.load("models/sugar.json", function ( obj ) {
+				      obj.position.set(0, 0, -100);
+				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0xffffff});
+				     	scene.add( obj );
+				    } );
+				    
+				    //floor
+				    var faceMat = new THREE.MeshBasicMaterial({color: 0x888888,side: THREE.DoubleSide});
+            
+	          var floorTexture = texLoader.load( "assets/sand.jpg" );
+	          floorTexture.wrapS = THREE.RepeatWrapping;
+            floorTexture.wrapT = THREE.RepeatWrapping;
+	          floorTexture.repeat.set(4, 4);
+	          faceMat.map = floorTexture;
+	          var floor=new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),faceMat);
+	
+	          floor.rotation.x = Math.PI / 2;
+	          scene.add(floor);
+	          
+	          //skybox
+	          var materialArray = [];
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-xpos.png' ) }));
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-xneg.png' ) }));
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-ypos.png' ) }));
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-yneg.png' ) }));
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-zpos.png' ) }));
+            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-zneg.png' ) }));
+            for (var i = 0; i < 6; i++)
+               materialArray[i].side = THREE.BackSide;
+            var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
+            var skyboxGeom = new THREE.CubeGeometry( 5000, 5000, 5000, 1, 1, 1 );
+            var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
+            scene.add( skybox );
             
             //directional light
     				var ambient = new THREE.AmbientLight( 0x444444 );
@@ -70,7 +122,38 @@
             
             
             var controls = new THREE.OrbitControls(camera);
+            controls.maxPolarAngle = Math.PI/2;
+            controls.maxDistance = 1500;
             
+            //blinking eyes
+            loaded();
+            function loaded(){
+              if (eyes.length <= 0) {
+                setTimeout(loaded, 100);
+                return;
+              }
+              eyes.forEach(function(eye){
+                createjs.Tween.get(eye.material.color, {loop:true}).to({r:1},1000).to({r:0},1000);
+              });
+            }
+            
+            //moving ant
+            initAnt();
+            function initAnt(){
+              if (ant == undefined) {
+                setTimeout(initAnt, 100);
+                return;
+              }
+                moveLeft();
+            }
+            function moveLeft(){
+              ant.rotation.y = Math.PI/4;
+              createjs.Tween.get(ant.position).to({x:-100,z:100}, 2000).call(moveRight);
+            }
+            function moveRight(){
+              ant.rotation.y = Math.PI/4*5;
+              createjs.Tween.get(ant.position).to({x:0,z:0}, 2000).call(moveLeft);
+            }
             
             render();
             function render(e){

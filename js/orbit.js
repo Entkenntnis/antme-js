@@ -183,6 +183,11 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			scale = 1;
 			panOffset.set( 0, 0, 0 );
+			
+			
+      if (position.y < 0.5) {
+          position.y = 0.5;
+      }
 
 			// update condition is:
 			// min(camera displacement, camera rotation in radians)^2 > EPS
