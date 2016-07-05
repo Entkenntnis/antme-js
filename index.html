@@ -1,0 +1,83 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Loading Ant model!</title>
+        <style>
+            body { margin: 0}
+            canvas { width:100%; height:100% }
+        </style>
+    </head>
+    <body>
+        <script src="js/THREE.js"></script>
+        <script src="js/orbit.js"></script>
+        <script>
+            "use strict";
+            
+            
+            
+            var scene = new THREE.Scene();
+            var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 10000);
+            camera.position.z = 100;
+            
+            var renderer = new THREE.WebGLRenderer();
+            document.body.appendChild(renderer.domElement);
+            
+            
+            /*var geometry = new THREE.BoxGeometry( 10, 10, 10 );
+            var material = new THREE.MeshLambertMaterial( {color: 0x00ff00} );
+            var cube = new THREE.Mesh( geometry, material );
+            scene.add( cube );*/
+            var objectLoader = new THREE.ObjectLoader();
+				    objectLoader.load("ant.json", function ( obj ) {
+				      var body = obj.children[0].children[6];
+				      body.material = new THREE.MeshPhongMaterial({color:0xff0000});
+				     	scene.add( obj);
+				    } );
+				    objectLoader.load("anthill.json", function ( obj ) {
+				      obj.position.set(60, 0, 0);
+				     	scene.add( obj );
+				    } );
+				    
+				    objectLoader.load("apple.json", function ( obj ) {
+				      obj.position.set(-50, 0, 0);
+				     	scene.add( obj );
+				    } );
+				    objectLoader.load("bug.json", function ( obj ) {
+				      obj.position.set(-10, 0, -20);
+				     	scene.add( obj );
+				    } );
+            
+            //directional light
+    				var ambient = new THREE.AmbientLight( 0x444444 );
+				    scene.add( ambient );
+				    var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+				    directionalLight.position.set( 1, 2, 3 ).normalize();
+				    scene.add( directionalLight );
+            
+            
+            window.addEventListener('resize', resize, false);
+            
+            function resize() {
+                var w = document.documentElement.clientWidth;
+                var h = document.documentElement.clientHeight;
+                renderer.setSize(w, h);
+                camera.aspect = w/h;
+                camera.updateProjectionMatrix();
+            }
+            
+            resize();
+            
+            
+            var controls = new THREE.OrbitControls(camera);
+            
+            
+            render();
+            function render(e){
+                renderer.render(scene, camera);
+                requestAnimationFrame(render);
+            }
+            
+        </script>
+    </body>
+</html>
