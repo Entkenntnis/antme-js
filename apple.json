@@ -158,12 +158,6 @@
                 "receiveShadow": true,
                 "geometry": "E5007347-0620-3A4F-9C14-3175057EFA7E"
             }]
-        },{
-            "name": "apple.001",
-            "uuid": "96F806B1-6537-383B-BA01-7F4747C287A5",
-            "matrix": [-1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
-            "visible": true,
-            "type": "Object"
         }]
     },
     "animations": [{

@@ -192,12 +192,6 @@
         "uuid": "59B29888-E6E8-4942-88CB-D4A58EB8F63A",
         "type": "Scene",
         "children": [{
-            "name": "anthill",
-            "uuid": "AEC5D4A3-601D-3B7F-A4B8-25129F7B4A15",
-            "matrix": [-1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
-            "visible": true,
-            "type": "Object"
-        },{
             "name": "anthill.001",
             "uuid": "D3D8D011-CA02-3B19-81F8-871B10AC613F",
             "matrix": [-1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
