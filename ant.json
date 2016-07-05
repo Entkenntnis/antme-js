@@ -927,12 +927,6 @@
                 "receiveShadow": true,
                 "geometry": "D8FB34B6-AD6F-34F9-8E18-7FA47F851898"
             }]
-        },{
-            "name": "ant.001",
-            "uuid": "06BD465C-CF99-3EE8-8EC7-6238E414D7E1",
-            "matrix": [-1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
-            "visible": true,
-            "type": "Object"
         }]
     },
     "textures": [],
