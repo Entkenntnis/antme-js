@@ -202,11 +202,11 @@
     
     , onLoad : function(){
       // place some copies on the scene
-      antStore = new UnitStore(vw.ant0);
-      hillStore = new UnitStore(vw.hill0);
-      appleStore = new UnitStore(vw.apple0);
-      bugStore = new UnitStore(vw.bug0);
-      sugarStore = new UnitStore(vw.sugar0);
+      vw.antStore = new UnitStore(vw.ant0);
+      vw.hillStore = new UnitStore(vw.hill0);
+      vw.appleStore = new UnitStore(vw.apple0);
+      vw.bugStore = new UnitStore(vw.bug0);
+      vw.sugarStore = new UnitStore(vw.sugar0);
       
       // for testing purposes
       var redAnt = vw.ant0.clone();
