@@ -47,6 +47,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	// If damping is enabled, you must call controls.update() in your animation loop
 	this.enableDamping = false;
 	this.dampingFactor = 0.25;
+	
+	// NEW this user settable function is called after moving and clamps the position
+	this.clamper = function(pos){}
 
 	// This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
 	// Set to false to disable zooming
@@ -183,11 +186,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			scale = 1;
 			panOffset.set( 0, 0, 0 );
-			
-			
-      if (position.y < 0.5) {
-          position.y = 0.5;
-      }
 
 			// update condition is:
 			// min(camera displacement, camera rotation in radians)^2 > EPS
@@ -202,11 +200,13 @@ THREE.OrbitControls = function ( object, domElement ) {
 				lastPosition.copy( scope.object.position );
 				lastQuaternion.copy( scope.object.quaternion );
 				zoomChanged = false;
-
+        
+			  scope.clamper(scope.object.position);
 				return true;
 
 			}
 
+			scope.clamper(scope.object.position);
 			return false;
 
 		};

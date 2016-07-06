@@ -17,38 +17,49 @@
 "use strict";
 
 // encapsulate our project
-(function(global){
+//(function(global){
   
   // project-wide variables
-  var scene, camera, renderer, stats, controls;
+  var scene, camera, renderer, stats, controls, manager;
   
   function init(){
     // our stage
     scene = new THREE.Scene();
     
     // the floor lies in the xz-plane, don't worry about aspect here, will be done on resize 
-    var camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 10000);
+    camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 10000);
     camera.position.set(0, 2, 120);
     
     // the worker in the shadow
-    var renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer();
     document.body.appendChild(renderer.domElement);
     
     // showing nice fps
-    var stats = new Stats();
+    stats = new Stats();
     stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild( stats.dom );
+    
+    // make it movable
+    controls = new THREE.OrbitControls(camera);
+    controls.maxPolarAngle = Math.PI/2;
+    controls.maxDistance = 1500;
+    controls.clamper = function(pos){
+      if (pos.y < 0.5) {pos.y = 0.5;} // should add clamper to protect skybox
+    };
+    
+    // handle loading
+    manager = new THREE.LoadingManager();
     
     // making it awesome fullwindow
     window.addEventListener('resize', resize, false);
     resize();
     
-    // getting things piped over
-    loadObjs(); 
-  }
-  
-  function buildEnv(){
-  
+    vw.load();
+    
+    manager.onLoad = function(){
+      vw.onLoad();
+      animate()
+    };
   }
   
   function resize() {
@@ -65,168 +76,170 @@
     stats.end();
     requestAnimationFrame(animate);
   }
+  
+  
+  // THIS IS a 3d object manager
+  function UnitStore(proto){
+    var store = {};
+    var ready = [];
+    var prefix = 'unitstorekey:';
+    
+    this.has = function(id){
+      return (prefix + id) in store;
+    }
+    this.get = function(id){
+      if (this.has(id))
+        return store[prefix + id];
+      else {
+        if (ready.length > 0) {
+          var next = ready[0];
+          next.visible = true;
+          ready.splice(0, 1);
+          store[prefix + id] = next;
+          return next;
+        } else {
+          var newUnit = proto.clone();
+          scene.add(newUnit);
+          store[prefix+id] = newUnit;
+          return newUnit;
+        }
+      }
+    }
+    this.remove = function(id){
+      var obj = store[prefix + id];
+      obj.visible = false;
+      delete store[prefix + id];
+      ready.push(obj);
+    }
+  }
+  
+  
+  
+  // START OF 3d view related stuff
+  
+  var vw = {
+      ant0 : undefined
+    , bug0 : undefined
+    , hill0 : undefined
+    , sugar0 : undefined
+    , apple0 : undefined
+    , gamefloor : undefined
+    , skybox : undefined
+    , antStore : undefined
+    , hillStore : undefined
+    , sugarStore : undefined
+    , appleStore : undefined
+    , bugStore : undefined
+    
+    , load : function(){
+      
+      var objectLoader = new THREE.ObjectLoader(manager);
+      var textureLoader = new THREE.TextureLoader(manager);
+      
+      // floor
+      var floorTexture = textureLoader.load( "assets/sand.jpg" );
+      floorTexture.wrapS = THREE.RepeatWrapping;
+      floorTexture.wrapT = THREE.RepeatWrapping;
+      floorTexture.repeat.set(4, 4);
+      var floorMat = new THREE.MeshBasicMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture});
+      vw.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
+      vw.gamefloor.rotation.x = Math.PI / 2;
+      scene.add(vw.gamefloor);
+    
+      // skybox
+      var materialArray = [];
+      var posfixs = ['xpos', 'xneg', 'ypos', 'yneg', 'zpos', 'zneg'];
+      posfixs.forEach(function(val){
+        materialArray.push(new THREE.MeshBasicMaterial({
+          map:textureLoader.load('images/dawnmountain-' + val + '.png'),
+          side:THREE.BackSide}));
+      });
+      var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
+      var skyboxGeom = new THREE.CubeGeometry( 5000, 5000, 5000, 1, 1, 1 );
+      var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
+      vw.skybox = skybox;
+      scene.add( skybox );
+      
+      // light it up
+      var ambient = new THREE.AmbientLight( 0x444444 );
+	    scene.add( ambient );
+	    var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+	    directionalLight.position.set( 1, 2, 3 ).normalize();
+	    scene.add( directionalLight );
+    
+      // get models
+      objectLoader.load("models/ant.json", function ( obj ) {
+        obj.children[0].children.forEach(function(o){
+          o.material = new THREE.MeshPhongMaterial({color:0x0d0d0d});
+        });
+        vw.ant0 = obj;
+      });
+      objectLoader.load("models/anthill.json", function ( obj ) {
+        var earthTexture = textureLoader.load( "assets/earth.jpg" );
+        var mat = new THREE.MeshPhongMaterial({color:0x663300});
+        mat.map = earthTexture;
+        obj.children[0].children[1].material = mat;
+        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x000000});
+        obj.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xffffff});
+        vw.hill0 = obj;
+      });
+      objectLoader.load("models/apple.json", function ( obj ) {
+        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x00cc00});
+        obj.children[0].children[1].material = new THREE.MeshPhongMaterial({color:0x669900});
+        vw.apple0 = obj;
+      });
+      objectLoader.load("models/bug.json", function ( obj ) {
+        obj.children[0].children.forEach(function(o){
+          o.material = new THREE.MeshPhongMaterial({color:0x000000,specular:0x00dddd});
+        });
+        vw.bug0 = obj;
+      });
+      objectLoader.load("models/sugar.json", function ( obj ) {
+        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0xffffff});
+        vw.sugar0 = obj;
+      });
+    }
+    
+    , onLoad : function(){
+      // place some copies on the scene
+      antStore = new UnitStore(vw.ant0);
+      hillStore = new UnitStore(vw.hill0);
+      appleStore = new UnitStore(vw.apple0);
+      bugStore = new UnitStore(vw.bug0);
+      sugarStore = new UnitStore(vw.sugar0);
+      
+      // for testing purposes
+      var redAnt = vw.ant0.clone();
+      redAnt.children[0].children[10].material = new THREE.MeshPhongMaterial({color:0xff0000});
+      scene.add(redAnt);
+      var hill = vw.hill0.clone();
+      hill.position.set(60, 0, 0);
+      hill.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xff0000});
+      scene.add(hill);
+      var bug = vw.bug0.clone();
+      bug.position.set(-10, 0, 20);
+      scene.add(bug);
+      var sugar = vw.sugar0.clone();
+      sugar.position.set(0, 0, -100);
+      sugar.scale.set(0.4, 0.4, 0.4);
+      scene.add(sugar);
+      var apple = vw.apple0.clone();
+      apple.position.set(-50, 0, 0);
+      scene.add(apple);
+      // bug eyes: 6 + 7
+      // hills flag: 2
+      // ants body 10 7 6
+      // end testing
+      
+      
+    }
+  }
+  
+  init();
 
-
-})();
-
-
-
-
-            
-            
-            var manager = new THREE.LoadingManager();
-            var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 10000);
-    camera.position.z = 100;
-    camera.position.y = 1;
-            
-            var renderer = new THREE.WebGLRenderer();
-            document.body.appendChild(renderer.domElement);
-            var texLoader = new THREE.TextureLoader(manager);
-            
-            var stats = new Stats();
-            stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-            document.body.appendChild( stats.dom );
-            
-            // objects
-            var eyes = [];
-            var ant = undefined;
-            var objectLoader = new THREE.ObjectLoader(manager);
-				    objectLoader.load("models/ant.json", function ( obj ) {
-				      obj.children[0].children.forEach(function(o){
-				        o.material = new THREE.MeshPhongMaterial({color:0x0d0d0d});
-				      });
-				      var body = obj.children[0].children[6];
-				      body.material = new THREE.MeshPhongMaterial({color:0xff0000});
-				      ant = obj;
-				     	scene.add( obj);
-				    } );
-				    objectLoader.load("models/anthill.json", function ( obj ) {
-				      var earthTexture = texLoader.load( "assets/earth.jpg" );
-				      var mat = new THREE.MeshPhongMaterial({color:0x663300});
-				      mat.map = earthTexture;
-				      obj.children[0].children[1].material = mat;
-				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x000000});
-				      obj.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xff0000});
-				      obj.position.set(60, 0, 0);
-				     	scene.add( obj );
-				    } );
-				    
-				    objectLoader.load("models/apple.json", function ( obj ) {
-				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x00cc00});
-				      obj.children[0].children[1].material = new THREE.MeshPhongMaterial({color:0x669900});
-				      obj.position.set(-50, 0, 0);
-				     	scene.add( obj );
-				    } );
-				    objectLoader.load("models/bug.json", function ( obj ) {
-				      obj.children[0].children.forEach(function(o){
-				        o.material = new THREE.MeshPhongMaterial({color:0x000000,specular:0x00dddd});
-				      });
-				      eyes.push(obj.children[0].children[7]);
-				      eyes.push(obj.children[0].children[6]);
-				      obj.position.set(-10, 0, -20);
-				     	scene.add( obj );
-				    } );
-				    
-				    objectLoader.load("models/sugar.json", function ( obj ) {
-				      obj.position.set(0, 0, -100);
-				      obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0xffffff});
-				     	scene.add( obj );
-				    } );
-				    
-				    //floor
-				    var faceMat = new THREE.MeshBasicMaterial({color: 0x888888,side: THREE.DoubleSide});
-            
-	          var floorTexture = texLoader.load( "assets/sand.jpg" );
-	          floorTexture.wrapS = THREE.RepeatWrapping;
-            floorTexture.wrapT = THREE.RepeatWrapping;
-	          floorTexture.repeat.set(4, 4);
-	          faceMat.map = floorTexture;
-	          var floor=new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),faceMat);
-	
-	          floor.rotation.x = Math.PI / 2;
-	          scene.add(floor);
-	          
-	          //skybox
-	          var materialArray = [];
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-xpos.png' ) }));
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-xneg.png' ) }));
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-ypos.png' ) }));
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-yneg.png' ) }));
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-zpos.png' ) }));
-            materialArray.push(new THREE.MeshBasicMaterial( { map: texLoader.load( 'images/dawnmountain-zneg.png' ) }));
-            for (var i = 0; i < 6; i++)
-               materialArray[i].side = THREE.BackSide;
-            var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
-            var skyboxGeom = new THREE.CubeGeometry( 5000, 5000, 5000, 1, 1, 1 );
-            var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
-            scene.add( skybox );
-            
-            //directional light
-    				var ambient = new THREE.AmbientLight( 0x444444 );
-				    scene.add( ambient );
-				    var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-				    directionalLight.position.set( 1, 2, 3 ).normalize();
-				    scene.add( directionalLight );
-            
-            
-            window.addEventListener('resize', resize, false);
-            
-            function resize() {
-                var w = document.documentElement.clientWidth;
-                var h = document.documentElement.clientHeight;
-                renderer.setSize(w, h);
-                camera.aspect = w/h;
-                camera.updateProjectionMatrix();
-            }
-            
-            resize();
-            
-            
-            var controls = new THREE.OrbitControls(camera);
-            controls.maxPolarAngle = Math.PI/2;
-            controls.maxDistance = 1500;
-            
-            //blinking eyes
-            loaded();
-            function loaded(){
-              if (eyes.length <= 0) {
-                setTimeout(loaded, 100);
-                return;
-              }
-              eyes.forEach(function(eye){
-                createjs.Tween.get(eye.material.color, {loop:true}).to({r:1},1000).to({r:0},1000);
-              });
-            }
-            
-            //moving ant
-            initAnt();
-            function initAnt(){
-              if (ant == undefined) {
-                setTimeout(initAnt, 100);
-                return;
-              }
-                moveLeft();
-            }
-            function moveLeft(){
-              ant.rotation.y = Math.PI/4;
-              createjs.Tween.get(ant.position).to({x:-100,z:100}, 2000).call(moveRight);
-            }
-            function moveRight(){
-              ant.rotation.y = Math.PI/4*5;
-              createjs.Tween.get(ant.position).to({x:0,z:0}, 2000).call(moveLeft);
-            }
-            
-            manager.onLoad = render;
-            function render(e){
-              stats.begin();
-                renderer.render(scene, camera);
-                stats.end();
-                requestAnimationFrame(render);
-            }
-            
+//})(window);
         </script>
-        <div style="position: absolute; z-index: 1; left: 50px; top: 50px; width:400px; height:30px;font-size:2em">
+        <div style="position: absolute; z-index: 1; left: 50px; top: 50px; width:400px; height:30px;font-size:2em;color:white">
 	<p>Click/drag to rotate. Mouse wheel to zoom.</p>
 </div>
     </body>
