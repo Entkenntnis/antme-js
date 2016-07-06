@@ -189,7 +189,7 @@
       });
       objectLoader.load("models/apple.json", function ( obj ) {
         obj.children[0].children[0].material.color.setHex(0x00cc00);
-        obj.children[0].children[1].material.color.setHex(0x669900);
+        obj.children[0].children[1].material.color.setHex(0x66aa00);
         vw.apple0 = obj;
       });
       objectLoader.load("models/bug.json", function ( obj ) {
@@ -291,6 +291,17 @@
     , playerColors : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff]
     , SugarAmount : 1000
     , Sugar1Scale : 2000
+    , AppleRespawnDelay : 25
+    , SugarRespawnDelay : 25
+    , AntRespawnDelay : 15
+    , BugRespawnDelay : 15
+    , BugEnergy : 1000
+    , BugAttack : 50
+    , BugRotationSpeed : 3
+    , BugSpeed : 3
+    , BugRadius : 4
+    , BugRegenerationValue : 1
+    , BugRegenerationDelay : 5
   }
   
   // FINALLY THE real deal ... but yet testing only
@@ -307,7 +318,6 @@
     this.key = playerid;
     var hill = vw.hillStore.get(this.key);
     vw.setHillFlagColor(hill, SimOpts.playerColors[playerid]);
-    
     this.updatePos();
   }
   
@@ -367,11 +377,19 @@
   function Bug(pos){
     this.pos = pos;
     this.key = bugIndexCounter++;
+    this.energy = SimOpts.BugEnergy;
+    this.rotation = 0;
+    this.distance = 0;
+    this.heading = Math.round(Math.random()*360.0);
+    this.attacking = false;
+    this.moving = false;
+    this.delay = 0;
     this.updatePos();
   }
   
   Bug.prototype.updatePos = function(){
     vw.bugStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+    vw.bugStore.get(this.key).rotation.y = -this.heading / 180 * Math.PI + Math.PI;
   }
   
   
@@ -390,36 +408,20 @@
     , sugars : []
     , apples : []
     , hills : []
+    , bugs : []
   
   
       
       
       
-    , init:function(){ // called once when simulation starts
-      
-      Sim.playerCount = AntMe.ants.length;
-      
-      var area = (1 + (Sim.playerCount * SimOpts.PlayGroundSizePlayerMultiplier)) * SimOpts.PlayGroundBaseSize;
-      Sim.playgroundWidth = Math.round(Math.sqrt(area * SimOpts.PlayGroundAspect));
-      Sim.playgroundHeight = Math.round(Math.sqrt(area / SimOpts.PlayGroundAspect));
     
-      vw.gamefloor.geometry = new THREE.PlaneGeometry(Sim.playgroundWidth, Sim.playgroundHeight, 1, 1);
-      vw.gamefloor.geometry.verticesNeedUpdate = true;
-    
-      for(var i = 0; i < AntMe.ants.length; i++){
-        Sim.players.push(new Player(i, AntMe.ants[i]));
-        Sim.hills.push(new Hill(Sim.getHillPos(), i));
-      }
-      
-      Sim.nextAnt = 15;
-      Sim.nextSugar = 50;
-      Sim.nextApple = 75;
-      
-      
-    }
     
     , spawnAnt(playerid){
-      Sim.ants.push(new Ant(/*{x:hills[playerid].x+THREE.Math.randFloatSpread(60.0),y:hills[playerid].y+THREE.Math.randFloatSpread(60.0)}*/Sim.randomPos(), playerid));
+      var pos = Sim.hills[playerid].pos;
+      var degree = Math.random()*Math.PI*2;
+      var xc = pos.x + Math.sin(degree)*SimOpts.AntHillRadius*1.2;
+      var yc = pos.y + Math.cos(degree)*SimOpts.AntHillRadius*1.2;
+      Sim.ants.push(new Ant({x:xc,y:yc}, playerid));
     }
     
     , toViewPosition(pos){
@@ -443,7 +445,7 @@
           continue;
         var isGood = true;
         for(var i = 0; i < Sim.hills.length; i++) {
-          var distance = Math.pow(Sim.hills[i].pos.x-pos.x, 2) + Math.pow(Sim.hills[i].pos.y-pos.y, 2);
+          var distance = Sim.getDistanceSq(Sim.hills[i].pos, pos);
           if (distance < 300*300) {
             isGood = false;
           }
@@ -454,22 +456,181 @@
       return pos;
     }
     
-    , update:function(){ // called for every round
+    , getGoodyPos:function(){
+      var pos;
+      var limit = 100;
+      while (limit > 0) {
+        pos = Sim.randomPos();
+        if (!Sim.isInBound(pos,50))
+          continue;
+        var toNear = false;
+        var atLeastNear = false;
+        for(var i = 0; i < Sim.hills.length; i++) {
+          var distance = Sim.getDistanceSq(Sim.hills[i].pos,pos);
+          if (distance < 300*300) {
+            toNear = true;
+          }
+          if (distance < 1500*1500) {
+            atLeastNear = true;
+          }
+        }
+        if (toNear) continue;
+        if (!atLeastNear) continue;
+        toNear = false;
+        var checkDist = function(obj){
+          var distance = Sim.getDistanceSq(obj.pos, pos);
+          if (distance < 150 * 150) {
+            toNear = true;
+          }
+        };
+        Sim.apples.forEach(checkDist);
+        Sim.sugars.forEach(checkDist);
+        if (toNear) continue;
+        return pos;
+      }
+      return pos;
+    }
+    
+    , getDistanceSq:function(a,b){
+      return Math.pow(a.x-b.x,2) + Math.pow(a.y-b.y,2);
+    }
+    
+    , isInBound:function(pos, margin){
+      if (margin == undefined)
+        margin = 0;
+      if (pos.x < margin || pos.y < margin)
+          return false;
+      if (Sim.playgroundWidth - pos.x < margin || Sim.playgroundHeight - pos.y < margin)
+        return false;
+      return true;
+    }
+    
+    
+    
+    , init:function(){ //# Phase 1 (Initialisierung)
+      
+      //# Rahmenparameter für die Simulation wird ermittelt (Siehe Einstellunge)
+      Sim.playerCount = AntMe.ants.length;
+      Sim.nextAnt = SimOpts.AntRespawnDelay;
+      Sim.nextSugar = SimOpts.SugarRespawnDelay;
+      Sim.nextApple = SimOpts.AppleRespawnDelay;
+      Sim.nextBug = SimOpts.BugRespawnDelay;
+      
+      //# Spielfeldgröße wird ermittelt (Abhängig von Spielerzahl)
+      var area = (1 + (Sim.playerCount * SimOpts.PlayGroundSizePlayerMultiplier)) * SimOpts.PlayGroundBaseSize;
+      Sim.playgroundWidth = Math.round(Math.sqrt(area * SimOpts.PlayGroundAspect));
+      Sim.playgroundHeight = Math.round(Math.sqrt(area / SimOpts.PlayGroundAspect));
+    
+      vw.gamefloor.geometry = new THREE.PlaneGeometry(Sim.playgroundWidth, Sim.playgroundHeight, 1, 1);
+      vw.gamefloor.geometry.verticesNeedUpdate = true;
+    
+      //# Für jeden Spieleer wird die Position des Ameisenhügels per Zufall bestimmt
+      for(var i = 0; i < AntMe.ants.length; i++){
+        Sim.players.push(new Player(i, AntMe.ants[i]));
+        Sim.hills.push(new Hill(Sim.getHillPos(), i));
+      }
+      
+    }
+    
+    , update:function(){ //# Phase 2 (Rundenberechnung)
+      //# Verarbeitung der Nahrungsmittel
+      
+        //## Leere Zuckerhügel wegräumen: Bedingung ist hier, dass die Menge des Zuckers 0 ist
+        // cool stackoverflower
+        Array.prototype.removeIf = function(callback) {
+            var i = this.length;
+            while (i--) {
+                if (callback(this[i], i)) {
+                    this.splice(i, 1);
+                }
+            }
+        };
+        Sim.sugars.removeIf(function(obj){return obj.amount <= 0;});
+        
+        //## Neue Zuckerhügel erzeugen: Es wird geprüft, ob die Gesamtzahl der Zuckerberge groß genug ist(?) und die Respawn-Wartezeit abgewartet wurde. Wird ein neuer Berg erstellt, wird die Position per Zufall bestimmt und seine Menge wird durch den Standardwert der Einstellungen bestimmt
+        if (Sim.nextSugar-- <= 0 && Sim.sugars.length < Sim.playerCount+2){
+          Sim.nextSugar = SimOpts.SugarRespawnDelay;
+          Sim.sugars.push(new Sugar(Sim.getGoodyPos()));
+        }
+        
+        //## Neue Äpfel erzeugen ...
+        if (Sim.nextApple-- <= 0 && Sim.apples.length < Sim.playerCount*2 + 1){
+          Sim.nextApple = SimOpts.AppleRespawnDelay;
+          Sim.apples.push(new Apple(Sim.getGoodyPos()));
+        }
+    
+      //# Wanzenbewegung
+      
+        //## Falls eine Wanze im Kampf verwickelt: Angriffspunkte auf beteiligte Gegner verteilen. Betroffene Ameisen erhalten einen Aufruf auf WirdAngegriffen(Wanze)
+        
+        // TODO
+        
+        //## Kein Kampf: Wanzen bewegen sich zufällig auf dem Spielfeld
+        Sim.bugs.forEach(function(bug){
+          if (!bug.fighting) {
+            if (bug.moving) {
+              if (Math.abs(bug.rotation) > 0) {
+                if (Math.abs(bug.rotation) < SimOpts.BugRotationSpeed) {
+                  bug.heading += bug.rotation;
+                  bug.rotation = 0;
+                  bug.updatePos();
+                } else {
+                  bug.heading += SimOpts.BugRotationSpeed * Math.sign(bug.rotation);
+                  bug.rotation -= SimOpts.BugRotationSpeed * Math.sign(bug.rotation);
+                  bug.updatePos();
+                  return;
+                }
+              }
+              if (bug.distance > 0) {
+                var toMove;
+                var toret = false;
+                if (bug.distance < SimOpts.BugSpeed) {
+                  toMove = bug.distance;
+                  bug.distance = 0;
+                  bug.updatePos();
+                } else {
+                  bug.distance -= SimOpts.BugSpeed;
+                  toMove = SimOpts.BugSpeed;
+                  bug.updatePos();
+                  toret = true;
+                }
+                var oldx = bug.pos.x;
+                var oldy = bug.pos.y;
+                bug.pos.x += toMove*Math.cos(bug.heading/180*Math.PI);
+                bug.pos.y += toMove*Math.sin(bug.heading/180*Math.PI);
+                if (!Sim.isInBound(bug.pos, 4)){
+                  bug.pos.x=oldx;bug.pos.y=oldy;
+                  bug.rotation = 180;
+                  bug.moving = true;
+                  bug.updatePos();
+                  return;
+                }
+                bug.updatePos();
+                if (toret) return;
+              }
+              bug.moving = false;
+              bug.delay = 10;
+            } else {
+              if (bug.delay-- <= 0) {
+                bug.moving = true;
+                bug.rotation = Math.round(Math.random()*180-90);
+                bug.distance = 100;
+              }
+            }            
+          }
+        });
+        
+    
       if (Sim.nextAnt-- <= 0) {
-        Sim.nextAnt = 15;
+        Sim.nextAnt = SimOpts.AntRespawnDelay;
         for(var i = 0; i < Sim.playerCount; i++) {
           Sim.spawnAnt(i);
         }
       }
-      if (Sim.nextSugar-- <= 0 && Sim.sugars.length < 4){
-        Sim.nextSugar = 50;
-        Sim.sugars.push(new Sugar(Sim.randomPos()));
+      if (Sim.nextBug-- <= 0 && Sim.bugs.length < Sim.playerCount+1) {
+        Sim.nextBug = SimOpts.BugRespawnDelay;
+        Sim.bugs.push(new Bug(Sim.getHillPos()));
       }
-      if (Sim.nextApple-- <= 0 && Sim.apples.length < 6){
-        Sim.nextApple = 75;
-        Sim.apples.push(new Apple(Sim.randomPos()));
-      }
-    
     }
   }
   
