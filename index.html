@@ -14,18 +14,75 @@
         <script src="js/tween.js"></script>
         <script src="js/stats.min.js"></script>
         <script>
-            "use strict";
+"use strict";
+
+// encapsulate our project
+(function(global){
+  
+  // project-wide variables
+  var scene, camera, renderer, stats, controls;
+  
+  function init(){
+    // our stage
+    scene = new THREE.Scene();
+    
+    // the floor lies in the xz-plane, don't worry about aspect here, will be done on resize 
+    var camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 10000);
+    camera.position.set(0, 2, 120);
+    
+    // the worker in the shadow
+    var renderer = new THREE.WebGLRenderer();
+    document.body.appendChild(renderer.domElement);
+    
+    // showing nice fps
+    var stats = new Stats();
+    stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild( stats.dom );
+    
+    // making it awesome fullwindow
+    window.addEventListener('resize', resize, false);
+    resize();
+    
+    // getting things piped over
+    loadObjs(); 
+  }
+  
+  function buildEnv(){
+  
+  }
+  
+  function resize() {
+    var w = document.documentElement.clientWidth;
+    var h = document.documentElement.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+
+  function animate(e){
+    stats.begin();
+    renderer.render(scene, camera);
+    stats.end();
+    requestAnimationFrame(animate);
+  }
+
+
+})();
+
+
+
+
             
             
-            
+            var manager = new THREE.LoadingManager();
             var scene = new THREE.Scene();
-            var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 10000);
-            camera.position.z = 100;
-            camera.position.y = 1;
+    var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 10000);
+    camera.position.z = 100;
+    camera.position.y = 1;
             
             var renderer = new THREE.WebGLRenderer();
             document.body.appendChild(renderer.domElement);
-            var texLoader = new THREE.TextureLoader();
+            var texLoader = new THREE.TextureLoader(manager);
             
             var stats = new Stats();
             stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -34,7 +91,7 @@
             // objects
             var eyes = [];
             var ant = undefined;
-            var objectLoader = new THREE.ObjectLoader();
+            var objectLoader = new THREE.ObjectLoader(manager);
 				    objectLoader.load("models/ant.json", function ( obj ) {
 				      obj.children[0].children.forEach(function(o){
 				        o.material = new THREE.MeshPhongMaterial({color:0x0d0d0d});
@@ -160,7 +217,7 @@
               createjs.Tween.get(ant.position).to({x:0,z:0}, 2000).call(moveLeft);
             }
             
-            render();
+            manager.onLoad = render;
             function render(e){
               stats.begin();
                 renderer.render(scene, camera);
