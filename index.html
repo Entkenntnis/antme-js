@@ -28,7 +28,7 @@
     
     // the floor lies in the xz-plane, don't worry about aspect here, will be done on resize 
     camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 10000);
-    camera.position.set(0, 400, 1000);
+    camera.position.set(0, 600, 1700);
     
     // the worker in the shadow
     renderer = new THREE.WebGLRenderer();
@@ -42,7 +42,7 @@
     // make it movable
     controls = new THREE.OrbitControls(camera);
     controls.maxPolarAngle = Math.PI/2;
-    controls.maxDistance = 1500;
+    controls.maxDistance = 2000;
     controls.clamper = function(pos){
       if (pos.y < 0.5) {pos.y = 0.5;} // should add clamper to protect skybox
     };
@@ -289,66 +289,107 @@
     , BattleRange : 5
     , SimulationCycles : 5000
     , playerColors : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff]
+    , SugarAmount : 1000
+    , Sugar1Scale : 2000
   }
   
   // FINALLY THE real deal ... but yet testing only
   
-  
+    // PLAYER
   function Player(id, ant){
     this.id = id;
     this.ant = ant;
-    this.ants = [];
   }
   
+    // HILL
   function Hill(pos, playerid){
-    this.x = pos.x;
-    this.y = pos.y;
-    this.id = playerid;
-    vw.setHillFlagColor(vw.hillStore.get(playerid), SimOpts.playerColors[playerid]);
-    vw.hillStore.get(playerid).position.copy(Sim.toViewPosition(pos.x, pos.y))
+    this.pos = pos;
+    this.key = playerid;
+    var hill = vw.hillStore.get(this.key);
+    vw.setHillFlagColor(hill, SimOpts.playerColors[playerid]);
+    
+    this.updatePos();
   }
   
+  Hill.prototype.updatePos = function(){
+    vw.hillStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+  }
+  
+    // ANT
   var antIndexCounter = 0;
   function Ant(pos, playerid){
     this.playerid = playerid
-    this.x = pos.x;
-    this.y = pos.y;
+    this.pos = pos
     this.id = antIndexCounter++;
     this.key = playerid + ':' + this.id
     var ant = vw.antStore.get(this.key);
     vw.setAntBodyColor(ant, SimOpts.playerColors[this.playerid]);
-    ant.position.copy(Sim.toViewPosition(pos.x, pos.y))
+    this.updatePos();
   }
   
+  Ant.prototype.updatePos = function(){
+    vw.antStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+  }
+  
+    // SUGAR
   var sugarIndexCounter = 0;
   function Sugar(pos){
-    this.fill = 1;
-    this.x = pos.x;
-    this.y = pos.y;
+    this.amount = SimOpts.SugarAmount;
+    this.pos = pos;
     this.key = sugarIndexCounter++;
-    var sugar = vw.sugarStore.get(this.key);
-    sugar.position.copy(Sim.toViewPosition(pos.x, pos.y));
+    this.updatePos();
+    this.updateScale();
   }
   
+  Sugar.prototype.updatePos = function(){
+    vw.sugarStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+  }
+  
+  Sugar.prototype.updateScale = function(){
+    var scale = this.amount / SimOpts.Sugar1Scale;
+    vw.sugarStore.get(this.key).scale.set(scale, scale, scale);
+  }
+  
+    // APPLE
   var appleIndexCounter = 0;
   function Apple(pos){
+    this.pos = pos;
     this.key = appleIndexCounter++;
-    var apple = vw.appleStore.get(this.key);
-    apple.position.copy(Sim.toViewPosition(pos.x, pos.y));
+    this.updatePos();
   }
+  
+  Apple.prototype.updatePos = function(){
+    vw.appleStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+  }
+  
+    // BUG
+  var bugIndexCounter = 0;
+  function Bug(pos){
+    this.pos = pos;
+    this.key = bugIndexCounter++;
+    this.updatePos();
+  }
+  
+  Bug.prototype.updatePos = function(){
+    vw.bugStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+  }
+  
+  
+  // here everything comes together
   
   var Sim = {
       players : []
     , playerCount : undefined
     , playgroundWidth : undefined
     , playgroundHeight : undefined  
-    , hills : []
     , nextAnt : undefined
     , nextSugar : undefined
     , nextApple : undefined
+    , nextBug : undefined
     , ants : []
     , sugars : []
     , apples : []
+    , hills : []
   
   
       
@@ -367,40 +408,12 @@
     
       for(var i = 0; i < AntMe.ants.length; i++){
         Sim.players.push(new Player(i, AntMe.ants[i]));
-        Sim.hills.push(new Hill(Sim.randomPos(), i));
+        Sim.hills.push(new Hill(Sim.getHillPos(), i));
       }
       
       Sim.nextAnt = 15;
       Sim.nextSugar = 50;
       Sim.nextApple = 75;
-    
-      /*// for testing purposes
-      Sim.redAnt = vw.ant0.clone();
-      vw.setAntBodyColor(Sim.redAnt, 0xff0000);
-      scene.add(Sim.redAnt);
-      var hill = vw.hill0.clone();
-      hill.position.set(60, 0, 0);
-      vw.setHillFlagColor(hill, 0xff0000);
-      scene.add(hill);
-      var bug = vw.bug0.clone();
-      bug.position.set(-10, 0, 20);
-      scene.add(bug);
-      var sugar = vw.sugar0.clone();
-      sugar.position.set(0, 0, -100);
-      sugar.scale.set(0.4, 0.4, 0.4);
-      scene.add(sugar);
-      var apple = vw.apple0.clone();
-      apple.position.set(-50, 0, 0);
-      scene.add(apple);
-      var geometry = new THREE.BoxGeometry( 32, 1, 1 );
-      var material = new THREE.MeshLambertMaterial( { color: 0x00ff00,shading:THREE.FlatShading } );
-      var cube = new THREE.Mesh( geometry, material );
-      scene.add( cube );
-      cube.position.set(60, 50, 0);
-      // bug eyes: 6 + 7
-      // hills flag: 2
-      // ants body 10 7 6
-      // end testing*/
       
       
     }
@@ -409,14 +422,36 @@
       Sim.ants.push(new Ant(/*{x:hills[playerid].x+THREE.Math.randFloatSpread(60.0),y:hills[playerid].y+THREE.Math.randFloatSpread(60.0)}*/Sim.randomPos(), playerid));
     }
     
-    , toViewPosition(x, y){
-      return new THREE.Vector3(x-Sim.playgroundWidth/2.0, 0, y-Sim.playgroundHeight/2.0);
+    , toViewPosition(pos){
+      return new THREE.Vector3(pos.x-Sim.playgroundWidth/2.0, 0, pos.y-Sim.playgroundHeight/2.0);
     }
     
     , randomPos(){
       return {
         x:Math.random()*Sim.playgroundWidth,
         y:Math.random()*Sim.playgroundHeight};
+    }
+    
+    , getHillPos:function(){
+      var pos;
+      var limit = 100;
+      while(limit > 0) {
+        pos = Sim.randomPos();
+        if (pos.x < 50 || pos.y < 50)
+          continue;
+        if (Sim.playgroundWidth - pos.x < 50 || Sim.playgroundHeight - pos.y < 50)
+          continue;
+        var isGood = true;
+        for(var i = 0; i < Sim.hills.length; i++) {
+          var distance = Math.pow(Sim.hills[i].pos.x-pos.x, 2) + Math.pow(Sim.hills[i].pos.y-pos.y, 2);
+          if (distance < 300*300) {
+            isGood = false;
+          }
+        }
+        if (!isGood) continue;
+        return pos;
+      }
+      return pos;
     }
     
     , update:function(){ // called for every round
@@ -452,6 +487,8 @@
   // USER SPACE
    
   AntMe.addAnt({name:"ant1"});
+  AntMe.addAnt({name:"ant2"});
+  AntMe.addAnt({name:"ant2"});
   AntMe.addAnt({name:"ant2"});
   
   init();
