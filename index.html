@@ -36,7 +36,7 @@
     
     // showing nice fps
     stats = new Stats();
-    stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+    stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild( stats.dom );
     
     // make it movable
@@ -58,6 +58,7 @@
     
     manager.onLoad = function(){
       vw.onLoad();
+      SimPulse.init(); // currently simulation starts automatically
       animate()
     };
   }
@@ -71,9 +72,13 @@
   }
 
   function animate(e){
-    stats.begin();
-    renderer.render(scene, camera);
-    stats.end();
+    if (SimPulse.needsRedraw){
+      Sim.pipe();
+      stats.begin();
+      renderer.render(scene, camera);
+      SimPulse.needRedraw = false;
+      stats.end();
+    }
     requestAnimationFrame(animate);
   }
   
@@ -170,7 +175,7 @@
       // get models
       objectLoader.load("models/ant.json", function ( obj ) {
         obj.children[0].children.forEach(function(o){
-          o.material = new THREE.MeshPhongMaterial({color:0x0d0d0d});
+          o.material.color.setHex(0x0d0d0d);
         });
         vw.ant0 = obj;
       });
@@ -179,42 +184,155 @@
         var mat = new THREE.MeshPhongMaterial({color:0x663300});
         mat.map = earthTexture;
         obj.children[0].children[1].material = mat;
-        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x000000});
-        obj.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xffffff});
+        obj.children[0].children[0].material.color.setHex(0x000000);
+        obj.children[0].children[2].material.color.setHex(0xffffff);
         vw.hill0 = obj;
       });
       objectLoader.load("models/apple.json", function ( obj ) {
-        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0x00cc00});
-        obj.children[0].children[1].material = new THREE.MeshPhongMaterial({color:0x669900});
+        obj.children[0].children[0].material.color.setHex(0x00cc00);
+        obj.children[0].children[1].material.color.setHex(0x669900);
         vw.apple0 = obj;
       });
       objectLoader.load("models/bug.json", function ( obj ) {
         obj.children[0].children.forEach(function(o){
-          o.material = new THREE.MeshPhongMaterial({color:0x000000,specular:0x00dddd});
+          o.material.color.setHex(0x000000);
+          o.material.specular.setHex(0x00dddd);
         });
         vw.bug0 = obj;
       });
       objectLoader.load("models/sugar.json", function ( obj ) {
-        obj.children[0].children[0].material = new THREE.MeshPhongMaterial({color:0xffffff});
+        obj.children[0].children[0].material.color.setHex(0xffffff);
         vw.sugar0 = obj;
       });
     }
     
     , onLoad : function(){
-      // place some copies on the scene
+      // open stores
       vw.antStore = new UnitStore(vw.ant0);
       vw.hillStore = new UnitStore(vw.hill0);
       vw.appleStore = new UnitStore(vw.apple0);
       vw.bugStore = new UnitStore(vw.bug0);
       vw.sugarStore = new UnitStore(vw.sugar0);
+    }
+    
+    , setAntBodyColor : function(ant, color){
+      [/*10,*/ 7, 6].forEach(function(id){
+        ant.children[0].children[id].material.color.setHex(color);
+      });
+    }
+    
+    , setHillFlagColor : function(hill, color){
+      hill.children[0].children[2].material.color.setHex(color);
+    }
+    
+    , setBugEyeColor : function(bug, color) {
+      [6, 7].forEach(function(id){
+        bug.children[0].children[id].material.color.setHex(color);
+      });
+    }
+  }
+  
+  
+  
+  // START OF simulation pulsing: start, stop, interval, end
+  
+  var SimPulse = {
+      running : false
+    , nextTickTime : undefined
+    , simulationFps : 15.0
+    , fpsInterval : undefined
+    , needsRedraw : false
+    , cycles : 0
+    
+    , init:function(){
+      // call this to start simulation
+      SimPulse.needsRedraw = true;
+      SimPulse.running = true;
+      SimPulse.fpsInterval = 1000.0 / SimPulse.simulationFps;
+      SimPulse.cycles = 0;
+      Sim.init();
+      SimPulse.nextTickTime = Date.now() + SimPulse.simulationFps;
+      SimPulse.tick();
+    }
+    
+    , tick:function(){
+      if (SimPulse.cycles >= SimOpts.SimulationCycles) {
+        end();
+        return;
+      }
+      Sim.update();
+      SimPulse.cycles++;
+      SimPulse.needsRedraw = true;
+      if (SimPulse.running) {
+        // make sure we are really running the right fps
+        var curTime = Date.now();
+        var diff = SimPulse.nextTickTime - curTime;
+        var interval = SimPulse.fpsInterval + diff;
+        if (interval < 0) interval = 0;
+        SimPulse.nextTickTime = curTime + SimPulse.fpsInterval;
+        setTimeout(SimPulse.tick,interval);
+      }
+    }
+    
+    , end:function(){
+      SimPulse.running = false;
+    }
+  }
+  
+  
+  // TONS OF options to tune
+  
+  var SimOpts = {
+      PlayGroundAspect : 4.0/3.0
+    , PlayGroundBaseSize: 550000
+    , PlayGroundSizePlayerMultiplier : 1
+    , AntHillRadius : 32
+    , BattleRange : 5
+    , SimulationCycles : 5000
+  }
+  
+  // FINALLY THE real deal ... but yet testing only
+  
+  var Sim = {
+      players : []  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    , redAnt : undefined
       
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    , init:function(){ // called once when simulation starts
+    
+    
       // for testing purposes
-      var redAnt = vw.ant0.clone();
-      redAnt.children[0].children[10].material = new THREE.MeshPhongMaterial({color:0xff0000});
-      scene.add(redAnt);
+      Sim.redAnt = vw.ant0.clone();
+      vw.setAntBodyColor(Sim.redAnt, 0xff0000);
+      scene.add(Sim.redAnt);
       var hill = vw.hill0.clone();
       hill.position.set(60, 0, 0);
-      hill.children[0].children[2].material = new THREE.MeshPhongMaterial({color:0xff0000});
+      vw.setHillFlagColor(hill, 0xff0000);
       scene.add(hill);
       var bug = vw.bug0.clone();
       bug.position.set(-10, 0, 20);
@@ -226,6 +344,11 @@
       var apple = vw.apple0.clone();
       apple.position.set(-50, 0, 0);
       scene.add(apple);
+      var geometry = new THREE.BoxGeometry( 32, 1, 1 );
+      var material = new THREE.MeshLambertMaterial( { color: 0x00ff00,shading:THREE.FlatShading } );
+      var cube = new THREE.Mesh( geometry, material );
+      scene.add( cube );
+      cube.position.set(60, 50, 0);
       // bug eyes: 6 + 7
       // hills flag: 2
       // ants body 10 7 6
@@ -233,9 +356,53 @@
       
       
     }
+    
+    , update:function(){ // called every tick
+      Sim.redAnt.position.x-=0.5;
+    }
+    
+    , pipe:function(){ // called before rendering to view
+    
+      // simulation updates data to view
+    }
   }
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   init();
+  
 
 //})(window);
         </script>
