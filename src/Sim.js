@@ -3,17 +3,14 @@
 // encapsulate our project
 (function(vw, SimOpts, global, am){
   
-
   
-  
-
-    
   // FINALLY THE real deal
     
     // PLAYER
   function Player(id, ant){
     this.id = id;
     this.ant = ant;
+    this.points = 0;
   }
 
     // HILL
@@ -39,12 +36,15 @@
     this.key = playerid + ':' + this.id
     this.Antenergy = SimOpts.AntEnergy[0];
     this.energy = this.Antenergy;
-    this.destination = {x:100,y:100};
+    this.destination = undefined;//{x:1000,y:1000};
     this.distance = 0;
     this.rotation = 0;
     this.waiting = true;
+    this.bearing = 0;
+    this.viewRange = SimOpts.AntViewRange[0];
     this.rotationSpeed = SimOpts.AntRotationSpeed[0];
     this.lap = 0;
+    this.maxLoad = SimOpts.AntLoad[0];
     this.tired = false;
     this.speed = SimOpts.AntSpeed[0];
     this.heading = Math.random()*360;
@@ -56,6 +56,13 @@
   Ant.prototype.updatePos = function(){
     vw.antStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
     vw.antStore.get(this.key).rotation.y = -this.heading / 180 * Math.PI + Math.PI;
+    if (this.bearing > 0) {
+      var sugar = vw.sugarBoxStore.get(this.key);
+      sugar.position.copy(vw.antStore.get(this.key).position);
+      sugar.position.y = 3;
+    } else if (vw.sugarBoxStore.has(this.key)) {
+      vw.sugarBoxStore.remove(this.key);
+    }
   }
 
     // SUGAR
@@ -244,7 +251,7 @@
       obj.pos.y += toMove*Math.sin(obj.heading/180*Math.PI);
       if (!Sim.isInBound(obj.pos, 4)){
         obj.pos.x=oldx;obj.pos.y=oldy;
-        obj.rotation = 180;
+        obj.rotation = 100 + Math.random()*80;
         if ("moving" in obj)
           obj.moving = true;
       }
@@ -290,6 +297,19 @@
         }
       });
       return result;
+    }
+    
+    , headTo(obj, des){
+      var dis = Math.sqrt(Sim.getDistanceSq(des, obj.pos));
+      var dx = des.x - obj.pos.x;
+      var angle = obj.heading;
+      if (des.y < obj.pos.y) {
+        angle = (360-Math.acos(dx/dis)/Math.PI*180.0)%360;
+      } else {
+        angle = (Math.acos(dx/dis)/Math.PI*180.0)%360;
+      }
+      obj.rotation = angle - (obj.heading%360);
+      obj.distance = dis;
     }
     
     
@@ -379,6 +399,7 @@
       Sim.ants.forEach(function(ant){
         
         //## Ermitteln der ganzen UmgebungsInformationen (wie AnzahlAmeisenInSichtweise)
+        global.AktuelleLast = ant.bearing;
         // CALL setParameter
         
         //## Ameisenbewegung
@@ -389,15 +410,9 @@
           Sim.moveObj(ant, ant.speed); // Restwinkel
         } else if (ant.destination != undefined){
           // ahoi aufs Ziel
-          var des = ant.destination;
-          var dis = Math.sqrt(Sim.getDistanceSq(des, ant.pos));
-          var dx = des.x - ant.pos.x;
-          var dy = des.y - ant.pos.y;
-          var angle = Math.acos(-dx/dis)/Math.PI*180.0+180.0;
-          ant.rotation = angle - ant.heading;
-          ant.distance = dis;
+          Sim.headTo(ant, ant.destination);
         } else {
-          ant.waiting = true;
+          antMe.callUserFunc(ant, "Wartet");
         }
         
         //## Prüfung der zurücgelegten Strecke
@@ -418,29 +433,45 @@
        
         //## Kampfabwicklung
           //Ameisen kämpfen nicht!
+          
+        if (ant.destination == undefined) {
+          var sugar = Sim.objsNear(ant.pos, ant.viewRange, Sim.sugars);
+          if (sugar.length > 0) {
+            antMe.callUserFunc(ant, "SiehtZucker", [sugar[0].pos])
+          }
+        }
         
         //## Zielprüfung (Ameise prüft, ob sie das angestrebte Ziel erreich hat)
+        var reachedDest = false;
           if (ant.destination != undefined) {
-            var distance = Sim.getDistanceSq(ant.destination, ant.pos);
-            if (distance < 1) {
-              ant.destination = undefined;
+            var distance = Math.sqrt(Sim.getDistanceSq(ant.destination, ant.pos));
+            if (distance < 3) {
+              ant.destination = undefined; // angekommen
+              reachedDest = true;
             }
+            
+          }
+          if (reachedDest) {
             var home = Sim.objsNear(ant.pos, 3, Sim.hills);
             if (home.length == 1&& home[0].playerid == ant.playerid) {
-              //### Prüfuen, ob das erreichte Ziel der Ameisenhügel ist. Dadurch werden ein
-              //    paar wichtige Dinge zurückgesetzt:
-                // Ziel zurückgesetzt
-                // done already
-                // Zurückgelegte Streckte wird auf 0 gesetzt
-                ant.lap = 0;
+              //### Prüfuen, ob das erreichte Ziel der Ameisenhügel ist.
                 ant.tired = false;
                 ant.energy = ant.AntEnergy;
+                Sim.players[ant.playerid].points += ant.bearing;
+                ant.bearing = 0;
+                ant.heading += 180;
+            }
+            var sugarNear = Sim.objsNear(ant.pos, 3, Sim.sugars);
+            if (sugarNear.length > 0){
+              antMe.callUserFunc(ant, "ZuckerErreicht", [sugarNear[0].pos]);
             }
           }
+        //## Sichtunge
         
           
         
       });
+      
         
         
       //# Tote Ameisen werden vom Spielfeld entfernt
@@ -479,12 +510,85 @@
 
   var antMe = {
       ants : []
+    , staticPlayerId : undefined
+    , curAnt : undefined
     , addAnt:function(ant){
       antMe.ants.push(ant);
     }
+    
+    , callUserFunc:function(ant, func, args){
+      func = Sim.players[ant.playerid].ant[func];
+      if (args == undefined)
+        args = [];
+      if (func == undefined)
+        return;
+      antMe.staticPlayerId = ant.playerid;
+      antMe.curAnt = ant;
+      func.apply(null, args);
+      antMe.staticPlayerId = undefined
+    }
   }
     
-  am.addAnt = antMe.addAnt;
+  am.AmeiseLaden = antMe.addAnt;
+  
+  // user wrapper
+  global.GeheGeradeaus = function(distance){
+    if (antMe.staticPlayerId == undefined)
+      return;
+    if (distance == undefined)
+      distance = 100000;
+    antMe.curAnt.distance = distance;
+  };
+  
+  global.GeheZuZiel = function(pos){
+    if (antMe.staticPlayerId == undefined)
+      return;
+    if (!("x" in pos) || !("y" in pos))
+      return;
+    antMe.curAnt.destination = pos;
+    antMe.curAnt.distance = 0;
+    antMe.curAnt.rotation = 0;
+  }
+  
+  global.Nimm = function(obj){
+    if (antMe.staticPlayerId == undefined)
+      return;
+    var ant = antMe.curAnt;
+    var sugar = Sim.objsNear(ant.pos, 3, Sim.sugars);
+    if (sugar.length > 0){
+      while(sugar[0].amount > 0 && ant.bearing < ant.maxLoad) {
+        sugar[0].amount--;
+        ant.bearing++;
+      }
+    }
+  }
+  
+  global.GeheZuBau = function(obj){
+    if (antMe.staticPlayerId == undefined)
+      return;
+    var ant = antMe.curAnt;
+    ant.destination = Sim.hills[ant.playerid].pos;
+    antMe.curAnt.distance = 0;
+    antMe.curAnt.rotation = 0;
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   // export
   am._sim = Sim;
