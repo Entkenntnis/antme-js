@@ -208,6 +208,21 @@ var AntMe = {};
       var material1 = new THREE.MeshLambertMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
       var sphere1 = new THREE.Mesh(geometry1, material1);
       vw.marker0 = sphere1;
+      
+
+      // debugging circle
+      var radius   = 100,
+      segments = 64,
+      material = new THREE.LineBasicMaterial( { color: 0x0000ff } ),
+      geometry = new THREE.CircleGeometry( radius, segments );
+
+      // Remove center vertex
+      geometry.vertices.shift();
+
+      var line = new THREE.Line(geometry, material);
+      line.rotation.x = Math.PI/2;
+      line.position.y = 0.5;
+      //scene.add( line );
     }
     
     , onLoad : function(){

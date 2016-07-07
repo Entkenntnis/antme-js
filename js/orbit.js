@@ -780,6 +780,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 		handleKeyDown( event );
 
 	}
+	
+	var pushStartTime = undefined;
 
 	function onTouchStart( event ) {
 
@@ -787,7 +789,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		switch ( event.touches.length ) {
 
-			case 1:	// one-fingered touch: rotate
+			/*case 3:	// three-fingered touch: rotate
 
 				if ( scope.enableRotate === false ) return;
 
@@ -795,7 +797,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 				state = STATE.TOUCH_ROTATE;
 
-				break;
+				break;*/
 
 			case 2:	// two-fingered touch: dolly
 
@@ -807,9 +809,11 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 				break;
 
-			case 3: // three-fingered touch: pan
+			case 1: // one-fingered touch: pan
 
 				if ( scope.enablePan === false ) return;
+				
+				pushStartTime = Date.now();
 
 				handleTouchStartPan( event );
 
@@ -840,14 +844,14 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		switch ( event.touches.length ) {
 
-			case 1: // one-fingered touch: rotate
+			/*case 3: // three-fingered touch: rotate
 
 				if ( scope.enableRotate === false ) return;
 				if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
 
 				handleTouchMoveRotate( event );
 
-				break;
+				break;*/
 
 			case 2: // two-fingered touch: dolly
 
@@ -858,14 +862,26 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 				break;
 
-			case 3: // three-fingered touch: pan
+			case 1: // one-fingered touch: pan
 
 				if ( scope.enablePan === false ) return;
-				if ( state !== STATE.TOUCH_PAN ) return; // is this needed?...
+				if ( state !== STATE.TOUCH_PAN ) { // NEW CODE TO HANDLE 
+				  handleTouchMoveRotate( event );
+				} else {
 
-				handleTouchMovePan( event );
+          if (pushStartTime != undefined && Date.now() - pushStartTime > 1000) {
+            
+				    handleTouchStartRotate( event );
 
-				break;
+				    state = STATE.TOUCH_PAN;
+				    handleTouchMoveRotate( event );
+            break;
+          }      
+          
+				  handleTouchMovePan( event );
+
+				  break;
+				}
 
 			default:
 
@@ -884,6 +900,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 		scope.dispatchEvent( endEvent );
 
 		state = STATE.NONE;
+		
+		pushStartTime = undefined;
 
 	}
 
