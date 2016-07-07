@@ -97,6 +97,9 @@
 
   Apple.prototype.updatePos = function(){
     vw.appleStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+    if (this.carries.length > 0) {
+      vw.appleStore.get(this.key).position.y = 2;
+    }
   }
 
     // BUG
@@ -544,7 +547,7 @@
           var pid = apple.carries[0].playerid;
           var hillpos = Sim.hills[pid].pos;
           var distance = Math.sqrt(Sim.getDistanceSq(hillpos, apple.pos));
-          if (distance < SimOpts.AntHillRadius) {
+          if (distance < SimOpts.AntHillRadius + 15) {
             Sim.players[pid].points += 125;
             vw.appleStore.remove(apple.key);
             apple.carries.forEach(function(c){
@@ -703,7 +706,6 @@
           (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid))
         return false;
       apple.carries.push(ant);
-      console.log(apple.carries.length);
       ant.load = ant.maxLoad;
       return true;
     }
