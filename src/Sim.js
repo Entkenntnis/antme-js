@@ -311,6 +311,12 @@
         angle = (Math.acos(dx/dis)/Math.PI*180.0)%360;
       }
       obj.rotation = angle - (obj.heading%360);
+      if (obj.rotation > 180) {
+        obj.rotation -= 360;
+      }
+      if (obj.rotation < -180) {
+        obj.rotation += 360;
+      }
       obj.distance = Math.min(50, dis);
     }
     
