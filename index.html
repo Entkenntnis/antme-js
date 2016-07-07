@@ -27,20 +27,35 @@ Ant1.Wartet = function(){
 };
 
 Ant1.SiehtZucker = function(zucker){
-  if (AktuelleLast == 0) {
+  /*if (AktuelleLast == 0) {
     GeheZuZiel(zucker);
-  }
+  }*/
 };
 
 Ant1.ZuckerErreicht = function(zucker){
-  Nimm(zucker);
-  GeheZuBau();
+  /*Nimm(zucker);
+  GeheZuBau();*/
 };
+
+Ant1.SiehtObst = function(apfel){
+  if (AktuelleLast == 0 && BrauchtNochTräger(apfel))
+    GeheZuZiel(apfel);
+}
+
+Ant1.ObstErreicht = function(apfel){
+  if (BrauchtNochTräger(apfel)) {
+    if (Nimm(apfel)) {
+      GeheZuBau();
+      console.log("go home");
+    }
+  }
+}
         
 AntMe.AmeiseLaden(Ant1);
 AntMe.AmeiseLaden(Ant1);
 AntMe.AmeiseLaden(Ant1);
-AntMe.AmeiseLaden(Ant1);/*
+//AntMe.AmeiseLaden(Ant1);
+/*
 AntMe.AmeiseLaden({name:"ant2"});
 AntMe.AmeiseLaden({name:"ant2"});*/
 

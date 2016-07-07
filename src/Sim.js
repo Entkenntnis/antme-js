@@ -91,6 +91,7 @@
   function Apple(pos){
     this.pos = pos;
     this.key = appleIndexCounter++;
+    this.carries = [];
     this.updatePos();
   }
 
@@ -496,7 +497,7 @@
               } else if (dest instanceof Sugar && dest.amount > 0) {
                 antMe.callUserFunc(ant, "ZuckerErreicht", dest);
               } else if (dest instanceof Apple) {
-                antMe.callUserFunc(ant, "ApfelErreicht", dest);
+                antMe.callUserFunc(ant, "ObstErreicht", dest);
                 
               }
             }
@@ -537,9 +538,68 @@
       });  
         
         
+      //# Entferne Apfel wenn nahe genug am Bau
+      Sim.apples.removeIf(function(apple){
+        if (apple.carries.length > 0) {
+          var pid = apple.carries[0].playerid;
+          var hillpos = Sim.hills[pid].pos;
+          var distance = Math.sqrt(Sim.getDistanceSq(hillpos, apple.pos));
+          if (distance < SimOpts.AntHillRadius) {
+            Sim.players[pid].points += 125;
+            vw.appleStore.remove(apple.key);
+            apple.carries.forEach(function(c){
+              c.load = 0;
+              c.destination = undefined;
+            });
+            return true;
+          }
+        }
+        return false;
+      });
         
-        
-        
+      //# Bewege Apfel/Ameisen Cluster
+      Sim.apples.forEach(function(apple){
+        if (apple.carries.length > 0) {
+          var sumx = 0, sumy = 0;
+          apple.carries.forEach(function(c){
+            sumx += c.pos.x;
+            sumy += c.pos.y;
+          });
+          sumx /= apple.carries.length;
+          sumy /= apple.carries.length;
+          var adx = sumx - apple.pos.x;
+          var ady = sumy - apple.pos.y;
+          var length = Math.sqrt(Sim.getDistanceSq({x:sumx,y:sumy}, apple.pos));
+          
+          var maxSpeed = apple.carries[0].maxSpeed / 2;
+          if (apple.carries.length < 6) {
+            maxSpeed = maxSpeed / 6 * apple.carries.length;
+          }
+          var scale = 1;
+          if (length > maxSpeed) {
+            scale = maxSpeed/length;
+          }        
+                    
+          apple.pos.x += adx*scale;
+          apple.pos.y += ady*scale;
+          sumx = apple.pos.x;
+          sumy = apple.pos.y;
+          apple.updatePos();
+          apple.carries.forEach(function(c){
+            var dx = c.pos.x - sumx;
+            var dy = c.pos.y - sumy;
+            var length = Math.sqrt(Sim.getDistanceSq({x:sumx,y:sumy},c.pos));
+            if (length > 6) {
+              var scale = 6/length;
+              c.pos.x = sumx + dx*scale;
+              c.pos.y = sumy + dy*scale;
+              c.rotation = 0;
+              c.distance = 0;
+              c.updatePos();
+            }
+          });
+        }
+      });
         
         
         
@@ -626,13 +686,28 @@
       return;
       
     var ant = antMe.curAnt;
-    var sugar = antMe.getObj(obj);
-    while(sugar.amount > 0 && ant.bearing < ant.maxLoad) {
-      sugar.amount--;
-      ant.bearing++;
+    var goody = antMe.getObj(obj);
+    if (goody instanceof Sugar) {
+      var sugar = goody;
+      var hassugar = false;
+      while(sugar.amount > 0 && ant.bearing < ant.maxLoad) {
+        sugar.amount--;
+        ant.bearing++;
+        hassugar = true;
+      }
+      sugar.updateScale();
+      return hassugar;
+    } else if (goody instanceof Apple){
+      var apple = goody;
+      if (apple.carries.indexOf(ant) >= 0 ||
+          (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid))
+        return false;
+      apple.carries.push(ant);
+      console.log(apple.carries.length);
+      ant.load = ant.maxLoad;
+      return true;
     }
-    sugar.updateScale();
-  }
+  } 
   
   global.GeheZuBau = function(){
     if (antMe.staticPlayerId == undefined)
@@ -642,6 +717,21 @@
     ant.destinationObj = Sim.hills[ant.playerid];
     antMe.curAnt.distance = 0;
     antMe.curAnt.rotation = 0;
+  }
+  
+  global.BrauchtNochTräger = function(obst){
+    if (antMe.staticPlayerId == undefined)
+      return;
+    var ant = antMe.curAnt;
+    obst = antMe.getObj(obst);
+    if (!(obst instanceof Apple))
+      return;
+    if (obst.carries.length == 0)
+      return true;
+    else if (obst.carries.length < 6 && ant.playerid == obst.carries[0].playerid)
+      return true;
+      
+    return false;
   }
   
   
