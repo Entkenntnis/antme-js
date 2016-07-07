@@ -15,7 +15,7 @@
     , SimulationCycles : 5000
     , playerColors : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff]
     , SugarAmount : 1000
-    , Sugar1Scale : 2000
+    , Sugar1Scale : 5000
     , AppleRespawnDelay : 25
     , SugarRespawnDelay : 25
     , AntRespawnDelay : 15
@@ -30,7 +30,7 @@
     , AntEnergy : {"-1":50,"0":100,"1":175,"2":250}
     , AntRotationSpeed : {"-1":6,"0":8,"1":12,"2":16}
     , AntSpeed : {"-1":3,"0":4,"1":5,"2":6}
-    , AntViewRange : {"-1":45,"0":160,"1":75,"2":90}
+    , AntViewRange : {"-1":45,"0":300,"1":75,"2":90}
     , AntLoad : {"-1":4, "0":5, "1":7, "2":10}
     , AntRange : 3000
   }

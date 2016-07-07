@@ -24,11 +24,13 @@ Ant1.Antname = "ant1";
 
 Ant1.Wartet = function(){
   GeheGeradeaus();
+  console.log("wartet");
 };
 
 Ant1.SiehtZucker = function(zucker){
   if (AktuelleLast == 0) {
     GeheZuZiel(zucker);
+    console.log("gehe zu zucker");
   }
 };
 
@@ -38,9 +40,9 @@ Ant1.ZuckerErreicht = function(zucker){
 };
         
 AntMe.AmeiseLaden(Ant1);
+/*AntMe.AmeiseLaden({name:"ant2"});
 AntMe.AmeiseLaden({name:"ant2"});
-AntMe.AmeiseLaden({name:"ant2"});
-AntMe.AmeiseLaden({name:"ant2"});
+AntMe.AmeiseLaden({name:"ant2"});*/
 
 
 
