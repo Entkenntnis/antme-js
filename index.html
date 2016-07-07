@@ -303,9 +303,13 @@
     , BugRadius : 4
     , BugRegenerationValue : 1
     , BugRegenerationDelay : 5
+    , AntEnergy : {"-1":50,"0":100,"1":175,"2":250}
+    , AntRotationSpeed : {"-1":6,"0":8,"1":12,"2":16}
+    , AntSpeed : {"-1":3,"0":4,"1":5,"2":6}
+    , AntRange : 300
   }
   
-  // FINALLY THE real deal ... but yet testing only
+  // FINALLY THE real deal
   
     // PLAYER
   function Player(id, ant){
@@ -316,6 +320,7 @@
     // HILL
   function Hill(pos, playerid){
     this.pos = pos;
+    this.playerid = playerid;
     this.key = playerid;
     var hill = vw.hillStore.get(this.key);
     vw.setHillFlagColor(hill, SimOpts.playerColors[playerid]);
@@ -333,6 +338,17 @@
     this.pos = pos
     this.id = antIndexCounter++;
     this.key = playerid + ':' + this.id
+    this.Antenergy = SimOpts.AntEnergy[0];
+    this.energy = this.Antenergy;
+    this.destination = {x:100,y:100};
+    this.distance = 0;
+    this.rotation = 0;
+    this.waiting = true;
+    this.rotationSpeed = SimOpts.AntRotationSpeed[0];
+    this.lap = 0;
+    this.tired = false;
+    this.speed = SimOpts.AntSpeed[0];
+    this.heading = Math.random()*360;
     var ant = vw.antStore.get(this.key);
     vw.setAntBodyColor(ant, SimOpts.playerColors[this.playerid]);
     this.updatePos();
@@ -340,6 +356,7 @@
   
   Ant.prototype.updatePos = function(){
     vw.antStore.get(this.key).position.copy(Sim.toViewPosition(this.pos));
+    vw.antStore.get(this.key).rotation.y = -this.heading / 180 * Math.PI + Math.PI;
   }
   
     // SUGAR
@@ -381,8 +398,9 @@
     this.energy = SimOpts.BugEnergy;
     this.rotation = 0;
     this.distance = 0;
+    this.energy = SimOpts.BugEnergy;
     this.heading = Math.round(Math.random()*360.0);
-    this.attacking = false;
+    this.fighting = false;
     this.moving = false;
     this.delay = 0;
     this.updatePos();
@@ -410,13 +428,6 @@
     , apples : []
     , hills : []
     , bugs : []
-  
-  
-      
-      
-      
-    
-    
     , spawnAnt(playerid){
       var pos = Sim.hills[playerid].pos;
       var degree = Math.random()*Math.PI*2;
@@ -506,6 +517,82 @@
       return true;
     }
     
+    , rotateObj:function(obj, speed){
+      if (obj.rotation < speed) {
+        obj.heading += obj.rotation;
+        obj.rotation = 0;
+        obj.updatePos();
+      } else {
+        var diff = speed * Math.sign(obj.rotation);
+        obj.heading += diff;
+        obj.rotation -= diff;
+      }
+      obj.updatePos();
+    }
+    
+    , moveObj:function(obj, speed){
+      var toMove;
+      if (obj.distance < speed) {
+        toMove = obj.distance;
+        obj.distance = 0;
+      } else {
+        obj.distance -= speed;
+        toMove = speed;
+      }
+      var oldx = obj.pos.x;
+      var oldy = obj.pos.y;
+      obj.pos.x += toMove*Math.cos(obj.heading/180*Math.PI);
+      obj.pos.y += toMove*Math.sin(obj.heading/180*Math.PI);
+      if (!Sim.isInBound(obj.pos, 4)){
+        obj.pos.x=oldx;obj.pos.y=oldy;
+        obj.rotation = 180;
+        if ("moving" in obj)
+          obj.moving = true;
+      }
+      if ("lap" in obj)
+        obj.lap += toMove;
+      obj.updatePos();
+    }
+    
+    , moveBug:function(bug){
+      if (!bug.fighting) {
+        if (bug.moving) {
+          if (bug.rotation != 0) {
+            Sim.rotateObj(bug, SimOpts.BugRotationSpeed);
+            return;
+          }
+          else if (bug.distance != 0) {
+            Sim.moveObj(bug, SimOpts.BugSpeed);
+            return;
+          } else {
+            bug.moving = false;
+            bug.delay = 10;
+          }
+        } else {
+          if (bug.delay-- <= 0) {
+            if (Sim.objsNear(bug.pos, 4, Sim.ants).length > 0 && Math.random() < 0.5) {
+              bug.fighting = true;
+            } else {
+              bug.moving = true;
+              bug.rotation = Math.round(Math.random()*180-90);
+              bug.distance = 100;
+            }
+          }
+        }            
+      }
+    }
+    
+    , objsNear(pos, range, arr){
+      var result = [];
+      arr.forEach(function(obj){
+        var dis = Sim.getDistanceSq(pos, obj.pos);
+        if (dis <= range*range) {
+          result.push(obj);
+        }
+      });
+      return result;
+    }
+    
     
     
     , init:function(){ //# Phase 1 (Initialisierung)
@@ -536,7 +623,9 @@
     , update:function(){ //# Phase 2 (Rundenberechnung)
       //# Verarbeitung der Nahrungsmittel
       
-        //## Leere Zuckerhügel wegräumen: Bedingung ist hier, dass die Menge des Zuckers 0 ist
+        //## Leere Zuckerhügel wegräumen: Bedingung ist hier,
+        //   dass die Menge des Zuckers 0 ist
+        
         // cool stackoverflower
         Array.prototype.removeIf = function(callback) {
             var i = this.length;
@@ -548,7 +637,11 @@
         };
         Sim.sugars.removeIf(function(obj){return obj.amount <= 0;});
         
-        //## Neue Zuckerhügel erzeugen: Es wird geprüft, ob die Gesamtzahl der Zuckerberge groß genug ist(?) und die Respawn-Wartezeit abgewartet wurde. Wird ein neuer Berg erstellt, wird die Position per Zufall bestimmt und seine Menge wird durch den Standardwert der Einstellungen bestimmt
+        //## Neue Zuckerhügel erzeugen: Es wird geprüft, ob die Gesamtzahl der
+        //   Zuckerberge groß genug ist(?) und die Respawn-Wartezeit abgewartet
+        //   wurde. Wird ein neuer Berg erstellt, wird die Position per Zufall
+        //   bestimmt und seine Menge wird durch den Standardwert der
+        //   Einstellungen bestimmt
         if (Sim.nextSugar-- <= 0 && Sim.sugars.length < Sim.playerCount+2){
           Sim.nextSugar = SimOpts.SugarRespawnDelay;
           Sim.sugars.push(new Sugar(Sim.getGoodyPos()));
@@ -562,65 +655,115 @@
     
       //# Wanzenbewegung
       
-        //## Falls eine Wanze im Kampf verwickelt: Angriffspunkte auf beteiligte Gegner verteilen. Betroffene Ameisen erhalten einen Aufruf auf WirdAngegriffen(Wanze)
-        
-        // TODO
-        
-        //## Kein Kampf: Wanzen bewegen sich zufällig auf dem Spielfeld
+        //## Falls eine Wanze im Kampf verwickelt: Angriffspunkte auf beteiligte
+        //   Gegner verteilen. Betroffene Ameisen erhalten einen Aufruf auf
+        //   WirdAngegriffen(Wanze)
         Sim.bugs.forEach(function(bug){
-          if (!bug.fighting) {
-            if (bug.moving) {
-              if (Math.abs(bug.rotation) > 0) {
-                if (Math.abs(bug.rotation) < SimOpts.BugRotationSpeed) {
-                  bug.heading += bug.rotation;
-                  bug.rotation = 0;
-                  bug.updatePos();
-                } else {
-                  bug.heading += SimOpts.BugRotationSpeed * Math.sign(bug.rotation);
-                  bug.rotation -= SimOpts.BugRotationSpeed * Math.sign(bug.rotation);
-                  bug.updatePos();
-                  return;
-                }
-              }
-              if (bug.distance > 0) {
-                var toMove;
-                var toret = false;
-                if (bug.distance < SimOpts.BugSpeed) {
-                  toMove = bug.distance;
-                  bug.distance = 0;
-                  bug.updatePos();
-                } else {
-                  bug.distance -= SimOpts.BugSpeed;
-                  toMove = SimOpts.BugSpeed;
-                  bug.updatePos();
-                  toret = true;
-                }
-                var oldx = bug.pos.x;
-                var oldy = bug.pos.y;
-                bug.pos.x += toMove*Math.cos(bug.heading/180*Math.PI);
-                bug.pos.y += toMove*Math.sin(bug.heading/180*Math.PI);
-                if (!Sim.isInBound(bug.pos, 4)){
-                  bug.pos.x=oldx;bug.pos.y=oldy;
-                  bug.rotation = 180;
-                  bug.moving = true;
-                  bug.updatePos();
-                  return;
-                }
-                bug.updatePos();
-                if (toret) return;
-              }
-              bug.moving = false;
-              bug.delay = 10;
+          if (bug.fighting) {
+            var bugAttackedAnts = Sim.objsNear(bug.pos, 4, Sim.ants);
+            if (bugAttackedAnts.length == 0) {
+              bug.fighting = false;
             } else {
-              if (bug.delay-- <= 0) {
-                bug.moving = true;
-                bug.rotation = Math.round(Math.random()*180-90);
-                bug.distance = 100;
-              }
-            }            
+              bugAttackedAnts.forEach(function(ant){
+                ant.energy -= SimOpts.BugAttack / bugAttackedAnts.length;
+              });
+            }
           }
         });
+        // CALL: WirdAngegriffen(Wanze)
         
+        
+        //## Kein Kampf: Wanzen bewegen sich zufällig auf dem Spielfeld
+        Sim.bugs.forEach(Sim.moveBug);
+        
+      //# Ameisen (Berechnung hier nicht Teamweise, sondern pro Ameise, wie sie kommen
+      Sim.ants.forEach(function(ant){
+        
+        //## Ermitteln der ganzen UmgebungsInformationen (wie AnzahlAmeisenInSichtweise)
+        // CALL setParameter
+        
+        //## Ameisenbewegung
+        ant.waiting = false;
+        if (ant.rotation != 0) {
+          Sim.rotateObj(ant, ant.rotationSpeed); // Restdrehung
+        } else if (ant.distance != 0) {
+          Sim.moveObj(ant, ant.speed); // Restwinkel
+        } else if (ant.destination != undefined){
+          // ahoi aufs Ziel
+          var des = ant.destination;
+          var dis = Math.sqrt(Sim.getDistanceSq(des, ant.pos));
+          var dx = des.x - ant.pos.x;
+          var dy = des.y - ant.pos.y;
+          var angle = Math.acos(-dx/dis)/Math.PI*180.0+180.0;
+          ant.rotation = angle - ant.heading;
+          ant.distance = dis;
+        } else {
+          ant.waiting = true;
+        }
+        
+        //## Prüfung der zurücgelegten Strecke
+          
+          //### Ameisen verhugern, wenn die maximale Reichweite überschritten wurde.
+          //    Es wird IstGestorben aufgerufen
+          if (ant.lap > SimOpts.AntRange) {
+            ant.energy = 0;
+          } else if (ant.lap > SimOpts.AntRange * 1/3.0) {
+            ant.tired = true;
+          }
+          
+          //### WirdMüde wird aufgerufen, wenn ein Drittel der Reichweite erreich wurde.
+          // CALL: WirdMüde
+          
+        //## Sichtungen
+           // CALL: lalal
+       
+        //## Kampfabwicklung
+          //Ameisen kämpfen nicht!
+        
+        //## Zielprüfung (Ameise prüft, ob sie das angestrebte Ziel erreich hat)
+          if (ant.destination != undefined) {
+            var distance = Sim.getDistanceSq(ant.destination, ant.pos);
+            if (distance < 1) {
+              ant.destination = undefined;
+            }
+            var home = Sim.objsNear(ant.pos, 3, Sim.hills);
+            if (home.length == 1&& home[0].playerid == ant.playerid) {
+              //### Prüfuen, ob das erreichte Ziel der Ameisenhügel ist. Dadurch werden ein
+              //    paar wichtige Dinge zurückgesetzt:
+                // Ziel zurückgesetzt
+                // done already
+                // Zurückgelegte Streckte wird auf 0 gesetzt
+                ant.lap = 0;
+                ant.tired = false;
+                ant.energy = ant.AntEnergy;
+            }
+          }
+        
+          
+        
+      });
+        
+        
+      //# Tote Ameisen werden vom Spielfeld entfernt
+      Sim.ants.removeIf(function(ant){
+        if (ant.energy <= 0) {
+          vw.antStore.remove(ant.key);
+          return true;
+        } else
+          return false;
+      });  
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        //---------------------------
     
       if (Sim.nextAnt-- <= 0) {
         Sim.nextAnt = SimOpts.AntRespawnDelay;
