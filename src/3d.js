@@ -116,6 +116,7 @@ var AntMe = {};
     , sugar0 : undefined
     , apple0 : undefined
     , sugarBox0 : undefined
+    , marker0 : undefined
     , gamefloor : undefined
     , skybox : undefined
     , antStore : undefined
@@ -124,6 +125,7 @@ var AntMe = {};
     , appleStore : undefined
     , bugStore : undefined
     , sugarBoxStore : undefined
+    , markerStore : undefined
     , needRedraw : true
     , onExtLoad : function(){}
     
@@ -200,6 +202,12 @@ var AntMe = {};
       // sugar box
       var sugarBoxGeo = new THREE.BoxGeometry( 2, 2, 2);
       vw.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
+      
+      // marker-sphere
+      var geometry1 = new THREE.SphereGeometry(40,32,24);
+      var material1 = new THREE.MeshLambertMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
+      var sphere1 = new THREE.Mesh(geometry1, material1);
+      vw.marker0 = sphere1;
     }
     
     , onLoad : function(){
@@ -210,6 +218,7 @@ var AntMe = {};
       vw.bugStore = new UnitStore(vw.bug0);
       vw.sugarStore = new UnitStore(vw.sugar0);
       vw.sugarBoxStore = new UnitStore(vw.sugarBox0);
+      vw.markerStore = new UnitStore(vw.marker0);
     }
     
     , setAntBodyColor : function(ant, c){

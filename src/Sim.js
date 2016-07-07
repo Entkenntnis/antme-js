@@ -82,7 +82,7 @@
 
   Sugar.prototype.updateScale = function(){
     var scale = this.amount / SimOpts.Sugar1Scale;
-    scale = Math.pow(scale, 1/3.0);
+    scale = Math.max(Math.pow(scale, 1/3.0), 0.000001);
     vw.sugarStore.get(this.key).scale.set(scale, scale, scale);
   }
 
@@ -362,7 +362,14 @@
                 }
             }
         };
-        Sim.sugars.removeIf(function(obj){return obj.amount <= 0;});
+        Sim.sugars.removeIf(function(obj){
+          if (obj.amount <= 0) {
+            vw.sugarStore.remove(obj.key);
+            return true;
+          } else {
+            return false;
+          }
+        });
         
         //## Neue Zuckerhügel erzeugen: Es wird geprüft, ob die Gesamtzahl der
         //   Zuckerberge groß genug ist(?) und die Respawn-Wartezeit abgewartet
@@ -486,7 +493,7 @@
                 Sim.players[ant.playerid].points += ant.bearing;
                 ant.bearing = 0;
                 ant.heading += 180;
-              } else if (dest instanceof Sugar) {
+              } else if (dest instanceof Sugar && dest.amount > 0) {
                 antMe.callUserFunc(ant, "ZuckerErreicht", dest);
               } else if (dest instanceof Apple) {
                 antMe.callUserFunc(ant, "ApfelErreicht", dest);
