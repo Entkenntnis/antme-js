@@ -1,4 +1,10 @@
-All source code lives in index.html. Take a look at this file to read through the current state.
+Now the code is distributed into separate files.
+
+The folder src/ contains all the code:
+- 3d.js takes care of rendering
+- SimOpts.js contains settings
+- SimPulse.js is the timing manager for a simulation
+- Sim.js is finally the simulation code
 
 js/ contains open source libraries, I am using THREE.js for general 3d rendering, OrbitControls to control the camera, TweenJS to create animations and THREE/Stats.js.
 
