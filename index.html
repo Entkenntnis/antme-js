@@ -40,8 +40,6 @@ Ant1.ZuckerErreicht = function(zucker){
 Ant1.SiehtObst = function(apfel){
   if (AktuelleLast == 0 && BrauchtNochTräger(apfel))
     GeheZuZiel(apfel);
-  else
-    GeheGeradeaus();
 }
 
 Ant1.ObstErreicht = function(apfel){
@@ -54,7 +52,7 @@ Ant1.ObstErreicht = function(apfel){
         
 AntMe.AmeiseLaden(Ant1);
 AntMe.AmeiseLaden(Ant1);
-//AntMe.AmeiseLaden(Ant1);
+AntMe.AmeiseLaden(Ant1);
 //AntMe.AmeiseLaden(Ant1);
 /*
 AntMe.AmeiseLaden({name:"ant2"});
