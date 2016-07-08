@@ -3,7 +3,16 @@
 // encapsulate our project
 (function(vw, SimOpts, global, am){
   
-  
+  // cool stackoverflower
+        Array.prototype.removeIf = function(callback) {
+            var i = this.length;
+            while (i--) {
+                if (callback(this[i], i)) {
+                    this.splice(i, 1);
+                }
+            }
+        };
+        
   // FINALLY THE real deal
     
     // PLAYER
@@ -357,15 +366,7 @@
         //## Leere Zuckerhügel wegräumen: Bedingung ist hier,
         //   dass die Menge des Zuckers 0 ist
         
-        // cool stackoverflower
-        Array.prototype.removeIf = function(callback) {
-            var i = this.length;
-            while (i--) {
-                if (callback(this[i], i)) {
-                    this.splice(i, 1);
-                }
-            }
-        };
+        
         Sim.sugars.removeIf(function(obj){
           if (obj.amount <= 0) {
             vw.sugarStore.remove(obj.key);
@@ -486,7 +487,7 @@
         //## Zielprüfung (Ameise prüft, ob sie das angestrebte Ziel erreich hat)
           if (ant.destination != undefined) {
             var distance = Math.sqrt(Sim.getDistanceSq(ant.pos, ant.destinationObj.pos));
-            if (distance < 2) {
+            if (distance < 10) {
               // angekommen
               var dest = ant.destinationObj;
               ant.destination = undefined;
@@ -499,7 +500,7 @@
                 ant.heading += 180;
               } else if (dest instanceof Sugar && dest.amount > 0) {
                 antMe.callUserFunc(ant, "ZuckerErreicht", dest);
-              } else if (dest instanceof Apple) {
+              } else if (dest instanceof Apple && Sim.apples.indexOf(dest) >= 0) {
                 antMe.callUserFunc(ant, "ObstErreicht", dest);
                 
               }
@@ -535,6 +536,11 @@
           if (vw.sugarBoxStore.has(ant.key)) {
             vw.sugarBoxStore.remove(ant.key);
           }
+          Sim.apples.forEach(function(apple){
+            /*apple.carries.removeIf(function(c){
+              return c == ant;
+            });*/
+          });
           return true;
         } else
           return false;
@@ -553,6 +559,9 @@
             apple.carries.forEach(function(c){
               c.load = 0;
               c.destination = undefined;
+              c.destinationObj = undefined;
+              c.rotation = 0;
+              c.distance = 0;
             });
             return true;
           }
@@ -591,11 +600,15 @@
           apple.carries.forEach(function(c){
             var dx = c.pos.x - sumx;
             var dy = c.pos.y - sumy;
+            var oldx = c.pos.x;
+            var oldy = c.pos.y;
             var length = Math.sqrt(Sim.getDistanceSq({x:sumx,y:sumy},c.pos));
             if (length > 6) {
               var scale = 6/length;
               c.pos.x = sumx + dx*scale;
               c.pos.y = sumy + dy*scale;
+              var diff = Math.sqrt(Sim.getDistanceSq({x:oldx,y:oldy},c.pos));
+              c.lap -= diff;
               c.rotation = 0;
               c.distance = 0;
               c.updatePos();
@@ -702,8 +715,11 @@
       return hassugar;
     } else if (goody instanceof Apple){
       var apple = goody;
-      if (apple.carries.indexOf(ant) >= 0 ||
-          (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid))
+      if (Sim.apples.indexOf(apple) < 0)
+        return false;
+      if (apple.carries.indexOf(ant) >= 0)
+        return false;
+      if (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid)
         return false;
       apple.carries.push(ant);
       ant.load = ant.maxLoad;
@@ -727,7 +743,9 @@
     var ant = antMe.curAnt;
     obst = antMe.getObj(obst);
     if (!(obst instanceof Apple))
-      return;
+      return false;
+    if (Sim.apples.indexOf(obst) < 0)
+      return false;
     if (obst.carries.length == 0)
       return true;
     else if (obst.carries.length < 6 && ant.playerid == obst.carries[0].playerid)
