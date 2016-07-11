@@ -8,7 +8,7 @@
   
   var SimOpts = {
       PlayGroundAspect : 4.0/3.0
-    , PlayGroundBaseSize: 550000
+    , PlayGroundBaseSize: 55000
     , PlayGroundSizePlayerMultiplier : 1
     , AntHillRadius : 32
     , BattleRange : 5

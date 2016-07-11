@@ -782,6 +782,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	}
 	
 	var pushStartTime = undefined;
+	var pushStartX, pushStartY;
 
 	function onTouchStart( event ) {
 
@@ -800,6 +801,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 				break;*/
 
 			case 2:	// two-fingered touch: dolly
+        pushStartTime = undefined;
 
 				if ( scope.enableZoom === false ) return;
 
@@ -814,6 +816,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 				if ( scope.enablePan === false ) return;
 				
 				pushStartTime = Date.now();
+				pushStartX = event.touches[ 0 ].pageX;
+				pushStartY = event.touches[ 0 ].pageY;
 
 				handleTouchStartPan( event );
 
@@ -854,7 +858,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 				break;*/
 
 			case 2: // two-fingered touch: dolly
-
+        pushStartTime = undefined;
 				if ( scope.enableZoom === false ) return;
 				if ( state !== STATE.TOUCH_DOLLY ) return; // is this needed?...
 
@@ -869,15 +873,24 @@ THREE.OrbitControls = function ( object, domElement ) {
 				  handleTouchMoveRotate( event );
 				} else {
 
-          if (pushStartTime != undefined && Date.now() - pushStartTime > 1000) {
-            
+          if (pushStartTime != undefined && Date.now() - pushStartTime > 500) {
+            handleTouchEnd(event);
 				    handleTouchStartRotate( event );
-
-				    state = STATE.TOUCH_PAN;
-				    handleTouchMoveRotate( event );
+            pushStartTime = undefined;
+				    state = STATE.TOUCH_ROTATE;
+				    //handleTouchMoveRotate( event );
             break;
           }      
+          //pushStartTime = undefined;
           
+          if (pushStartTime != undefined) {
+				    var cx = event.touches[ 0 ].pageX;
+				    var cy = event.touches[ 0 ].pageY;
+				    var distance = Math.sqrt(Math.pow(cx-pushStartX,2) + Math.pow(cy-pushStartY,2));
+				    if (distance > 15) {
+				      pushStartTime = undefined;
+				    }
+				  }
 				  handleTouchMovePan( event );
 
 				  break;
