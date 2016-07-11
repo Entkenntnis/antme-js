@@ -30,7 +30,8 @@ var AntMe = {};
     // make it movable
     controls = new THREE.OrbitControls(camera);
     controls.maxPolarAngle = Math.PI/2;
-    controls.maxDistance = 2000;
+    controls.maxDistance = 3000;
+    controls.minDistance = 500;	
     controls.clamper = function(pos){
       if (pos.y < 0.5) {pos.y = 0.5;} // should add clamper to protect skybox
     };
@@ -210,7 +211,6 @@ var AntMe = {};
       var material1 = new THREE.MeshLambertMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
       var sphere1 = new THREE.Mesh(geometry1, material1);
       vw.marker0 = sphere1;
-      
 
       // debugging circle
       var radius   = 100,
@@ -218,7 +218,7 @@ var AntMe = {};
       material = new THREE.LineBasicMaterial( { color: 0x0000ff } ),
       geometry = new THREE.CircleGeometry( radius, segments );
 
-      // Remove center vertex
+        // Remove center vertex
       geometry.vertices.shift();
 
       var line = new THREE.Line(geometry, material);
