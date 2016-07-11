@@ -783,7 +783,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 	
 	var pushStartTime = undefined;
 	var pushStartX, pushStartY;
-	var twofingerlock = false;
 
 	function onTouchStart( event ) {
 
@@ -825,7 +824,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 				handleTouchStartPan( event );
 
 				state = STATE.TOUCH_PAN;
-		    twofingerlock = false;
 
 				break;
 
@@ -873,11 +871,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 			case 1: // one-fingered touch: pan
 
 				if ( scope.enablePan === false ) return;
-				if (twofingerlock){
-				 return;}
-				if ( state !== STATE.TOUCH_PAN ) { // NEW CODE TO HANDLE 
+				if ( state == STATE.TOUCH_ROTATE ) { // NEW CODE TO HANDLE 
 				  handleTouchMoveRotate( event );
-				} else {
+				} else if (state == STATE.TOUCH_PAN) {
 
           if (pushStartTime != undefined && Date.now() - pushStartTime > 500) {
             handleTouchEnd(event);
@@ -899,8 +895,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 				  }
 				  handleTouchMovePan( event );
 
-				  break;
 				}
+				
+				break;
 
 			default:
 
@@ -921,7 +918,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 		state = STATE.NONE;
 		
 		pushStartTime = undefined;
-		twofingerlock = false;
 
 	}
 
