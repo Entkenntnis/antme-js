@@ -139,7 +139,7 @@ var AntMe = {};
       floorTexture.wrapS = THREE.RepeatWrapping;
       floorTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(4, 4);
-      var floorMat = new THREE.MeshBasicMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture});
+      var floorMat = new THREE.MeshPhongMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture});
       vw.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
       vw.gamefloor.rotation.x = Math.PI / 2;
       scene.add(vw.gamefloor);
@@ -168,7 +168,7 @@ var AntMe = {};
       // get models
       objectLoader.load("models/ant.json", function ( obj ) {
         obj.children[0].children.forEach(function(o){
-          o.material.color.setHex(0x0d0d0d);
+          o.material = new THREE.MeshLambertMaterial({color:0x000000});
         });
         obj.scale.set(1.6,1.6,1.6);
         vw.ant0 = obj;

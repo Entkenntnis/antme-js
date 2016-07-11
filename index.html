@@ -14,7 +14,7 @@
         <script src="js/tween.js"></script>
         <script src="js/stats.min.js"></script>
         <script src="src/3d.js"></script>
-        <script src="src/SimOpts.js"></script>
+        <script src="src/Optionen.js"></script>
         <script src="src/Simulation.js"></script>
         <script src="src/SimPulse.js"></script>
         <script>
@@ -23,39 +23,17 @@ var Ant1 = {};
 Ant1.Antname = "ant1";
 
 Ant1.Wartet = function(){
-  GeheGeradeaus();
+  GeheSchritte(Zufallszahl(10, 30));
+  DreheWinkel(Zufallszahl(-40, 40));
 };
 
-Ant1.SiehtZucker = function(zucker){
-  /*if (AktuelleLast == 0) {
-    GeheZuZiel(zucker);
-  }*/
-};
-
-Ant1.ZuckerErreicht = function(zucker){
-  /*Nimm(zucker);
-  GeheZuBau();*/
-};
-
-Ant1.SiehtObst = function(apfel){
-  if (AktuelleLast == 0 && BrauchtNochTräger(apfel))
-    GeheZuZiel(apfel);
-}
-
-Ant1.ObstErreicht = function(apfel){
-  if (BrauchtNochTräger(apfel)) {
-    Nimm(apfel);
-    GeheZuBau();
-  }
+Ant1.RandErreicht = function(){
+  DreheWinkel(120 + Zufallszahl(80));
+  GeheSchritte(RestSchritte);
 }
         
-AntMe.LadeAmeise({});
-AntMe.LadeAmeise({});
-//AntMe.AmeiseLaden(Ant1);
-//AntMe.AmeiseLaden(Ant1);
-/*
-AntMe.AmeiseLaden({name:"ant2"});
-AntMe.AmeiseLaden({name:"ant2"});*/
+AntMe.LadeAmeise(Ant1);
+AntMe.LadeAmeise(Ant1);
 
 
 

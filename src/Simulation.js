@@ -18,8 +18,6 @@
   function dist(a, b){
     return Math.sqrt(Math.pow(a.x-b.x,2) + Math.pow(a.y-b.y,2));
   }
-  
-  
 
 
 
@@ -33,8 +31,8 @@
 
     // PLAYER
   function Player(_id, _KI){
-    var id = id;
-    var KI = KI;
+    var id = _id;
+    var KI = _KI;
     var points = 0;
     
     this.getId = function(){
@@ -141,7 +139,7 @@
       return pos;
     }
     
-    // spawner
+    // spawning
     var timeToNextSugar = Optionen.ZuckerWartezeit;
     this.update = function(){
       var maximalSugars = (Sim.playerCount() + 1) * Optionen.ZuckerProSpieler;
@@ -232,6 +230,8 @@
     // ANT
   function Ant(_pos, _playerid){
     Ant.counter = Ant.counter || 1;
+    var speed = Optionen.AmeiseGeschwindigkeit;
+    var rotationSpeed = Optionen.AmeiseDrehgeschwindigkeit;
     var pos = _pos;
     var playerid = _playerid;
     var key = playerid + ":" + Ant.counter++;
@@ -268,31 +268,103 @@
     this.setPos = function(newpos){
       pos.x = newpos.x;
       pos.y = newpos.y;
+      updateGO();
+    }
+    
+    this.turn = function(degree){
+      heading += Math.round(degree);
+      heading %= 360;
+      updateGO();
     }
     
     this.addJob = function(job){
-      jobs.splice(insertionPoint, 0, jobs);
+      jobs.splice(insertionPoint, 0, job);
     }
     
     this.update = function(){
       insertionPoint = jobs.length;
       if (jobs.length > 0) {
         var curJob = jobs[jobs.length - 1];
-        var finished = curJob.callback();
+        var finished = curJob.callback.bind(this)();
         if (finished) {
           var index = jobs.indexOf(curJob);
           jobs.splice(index, 1);
         }
       } else {
-        
+        API.callUserFunc(this, "Wartet");
       }
+    }
+    
+    function actionMoveSteps(_steps){
+      var steps = _steps;
+      return [function(){
+        var toMove = 0;
+        var finished = false;
+        if (steps < speed) {
+          finished = true;
+          toMove = steps;
+        } else {
+          toMove = speed;
+          steps -= speed;
+        }
+        var oldx = pos.x;
+        var oldy = pos.y;
+        var newx = pos.x + toMove*Math.cos(heading/180*Math.PI);
+        var newy = pos.y + toMove*Math.sin(heading/180*Math.PI);
+        var newpos = {x:newx,y:newy};
+        if (Sim.playground.isInBound(newpos, 2)){
+          this.setPos(newpos);
+        } else {
+          finished = true;
+          global.RestSchritte = steps;
+          API.callUserFunc(this, "RandErreicht");
+          global.RestSchritte = undefined;
+        }
+        return finished;
+      },
+      function(){
+        return {type:"GO", value:steps};
+      }];
+    }
+    
+    function actionTurn(_degree){
+      var degree = _degree;
+      return [function(){
+        var toTurn = 0;
+        var finished = false;
+        if (Math.abs(degree) < rotationSpeed) {
+          finished = true;
+          toTurn = degree;
+        } else {
+          toTurn = rotationSpeed * Math.sign(degree);
+          degree -= rotationSpeed * Math.sign(degree);
+        }
+        this.turn(toTurn);
+        return finished;
+      },
+      function(){
+        return {type:"TURN", value:degree};
+      }];
+    }
+    
+    this.addGoJob = function(steps){
+      var funcs = actionMoveSteps(steps);
+      this.addJob(new Job("action", undefined, funcs[0], funcs[1]));
+    }
+    
+    this.addTurnJob = function(degree){
+      var funcs = actionTurn(degree);
+      this.addJob(new Job("action", undefined, funcs[0], funcs[1]));
     }
   }
   
   
   // JOB
-  function Job(callback){
+  function Job(type, parent, callback, info){
+    this.type = type;
+    this.parent = parent;
     this.callback = callback;
+    this.info = info;
   }
   
   
@@ -353,29 +425,29 @@
         arg = [];
       if (func == undefined)
         return;
-      antMe.staticPlayerId = ant.getPlayerid();
-      antMe.curAnt = ant;
-      func.bind(antMe.pushObj(ant))(antMe.pushObj(arg));
-      antMe.staticPlayerId = undefined;
-      keyStore = [];
+      API.staticPlayerId = ant.getPlayerid();
+      API.curAnt = ant;
+      func.bind(API.pushObj(ant))(API.pushObj(arg));
+      API.staticPlayerId = undefined;
+      API.keyStore = [];
     }
     
     , pushObj:function(obj){
-      var index = antMe.objStore.indexOf(obj);
+      var index = API.objStore.indexOf(obj);
       if (index >= 0)
-        return registerKey(index);
-      var id = antMe.objCounter++;
-      antMe.objStore.push(obj);
-      return registerKey(id);
+        return API.registerKey(index);
+      var id = API.objCounter++;
+      API.objStore.push(obj);
+      return API.registerKey(id);
     }
     
     , getObj:function(id){
-      return antMe.objStore[keyStore[id]];
+      return API.objStore[API.keyStore[id]];
     }
     
     , registerKey(index){
       var key = Math.random + "";
-      keyStore[key] = index;
+      API.keyStore[key] = index;
       return key;
     }
   }  
@@ -387,10 +459,28 @@
     }
   }
   
-  global.GehSchritt = function(number){
+  global.GeheSchritte = function(number){
     if (API.staticPlayerId == undefined)
       return;
-      // TODO
+    if (typeof number !== "number")
+      return;
+    API.curAnt.addGoJob(number);
+  }
+  
+  global.DreheWinkel = function(degree){
+    if (API.staticPlayerId == undefined)
+      return;
+    if (typeof degree !== "number")
+      return;
+    API.curAnt.addTurnJob(degree);
+  }
+  
+  global.Zufallszahl = function(a, b){
+    if (b == undefined) {
+      return Math.floor(Math.random()*a);
+    } else {
+      return Math.floor(Math.random()*(b-a))+a;
+    }
   }
 
 

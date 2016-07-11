@@ -24,7 +24,9 @@
     , ZuckerWartezeit : 125
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
-    , AmeisenMaximum : 50
+    , AmeisenMaximum : 30
+    , AmeiseGeschwindigkeit : 4
+    , AmeiseDrehgeschwindigkeit : 8
   }
   
   
@@ -32,7 +34,7 @@
   
   
   
-  var SimOpts = {
+  /*var SimOpts = {
       PlayGroundAspect : 4.0/3.0
     , PlayGroundBaseSize: 55000
     , PlayGroundSizePlayerMultiplier : 1
@@ -59,7 +61,10 @@
     , AntViewRange : {"-1":45,"0":300,"1":75,"2":90}
     , AntLoad : {"-1":4, "0":5, "1":7, "2":10}
     , AntRange : 3000
-  }
+  }*/
+  
+  
+  
   
   //export
   am._optionen = Optionen;
