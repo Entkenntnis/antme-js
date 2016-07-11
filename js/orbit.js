@@ -873,7 +873,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 			case 1: // one-fingered touch: pan
 
 				if ( scope.enablePan === false ) return;
-				if (twofingerlock) return;
+				if (twofingerlock){
+				  alert("locking pan after move");
+				 return;}
 				if ( state !== STATE.TOUCH_PAN ) { // NEW CODE TO HANDLE 
 				  handleTouchMoveRotate( event );
 				} else {
