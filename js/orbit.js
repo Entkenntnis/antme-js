@@ -810,6 +810,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 				state = STATE.TOUCH_DOLLY;
 				towfingerlock = true;
+				pushStartTime = undefined
 
 				break;
 
