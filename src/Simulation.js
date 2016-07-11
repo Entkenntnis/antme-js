@@ -1,25 +1,7 @@
 "use strict";
 
 // encapsulate our project
-(function(vw, later_Optionen, global, am){
-
-
-var Optionen = {
-    MaximaleSpieler : 8
-  , SpielfeldVerhältnis : 4.0/3.0
-  , SpielfeldGrundGröße : 550000
-  , HügelAbstand : 300
-  , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
-                     0xffff00, 0xff00ff, 0xffffff, 0x000000]
-  , ZuckerGröße : 1000
-  , ZuckerVergrößerung : 0.2
-  , NahrungMindestEntfernung : 300
-  , NahrungMaximalEntfernung : 1500
-  , NahrungAbstand : 100
-  , ZuckerWartezeit : 125
-  , ZuckerProSpieler : 1.5
-}
-
+(function(vw, Optionen, global, am){
 
 
 // protected helper functions
@@ -36,6 +18,8 @@ var Optionen = {
   function dist(a, b){
     return Math.sqrt(Math.pow(a.x-b.x,2) + Math.pow(a.y-b.y,2));
   }
+  
+  
 
 
 
@@ -108,7 +92,7 @@ var Optionen = {
       var limit = 100;
       while(limit > 0) {
         pos = this.randomPos();
-        if (!this.isInBound(pos, 50)){
+        if (!this.isInBound(pos, Optionen.HügelRandAbstand)){
           continue;
         }
         var isGood = true;
@@ -173,9 +157,9 @@ var Optionen = {
   function Hill(_pos, _playerid) {
     Hill.counter = Hill.counter || 1;
     var pos = _pos;
-    var playerid = playerid;
+    var playerid = _playerid;
     var key = Hill.counter++;
-    vw.setHillFlagColor(vw.hillStore.get(key), Optionen.SpielerFarben[_playerid]);
+    vw.setHillFlagColor(vw.hillStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
     function updateGO(){
@@ -188,6 +172,24 @@ var Optionen = {
     
     this.getPlayerid = function(){
       return playerid;
+    }
+    
+    var timeToNextAnt = Optionen.AmeiseWartezeit;
+    this.update = function(){
+      var ownAnts = 0;
+      Sim.ants.forEach(function(ant){
+        if (ant.getPlayerid() == playerid)
+          ownAnts++;
+      });
+      if (timeToNextAnt-- <= 0 && ownAnts < Optionen.AmeisenMaximum) {
+        timeToNextAnt = Optionen.AmeiseWartezeit;
+        var antPos = {x:pos.x,y:pos.y};
+        var angle = Math.random()*Math.PI*2;
+        var radius = Optionen.HügelRadius + (Math.random()*10 - 5);
+        antPos.x += Math.cos(angle)*radius;
+        antPos.y += Math.sin(angle)*radius;
+        Sim.ants.push(new Ant(antPos, playerid));
+      }
     }
   }
   
@@ -227,6 +229,72 @@ var Optionen = {
     }
   }
   
+    // ANT
+  function Ant(_pos, _playerid){
+    Ant.counter = Ant.counter || 1;
+    var pos = _pos;
+    var playerid = _playerid;
+    var key = playerid + ":" + Ant.counter++;
+    var heading = Math.floor(Math.random()*360);
+    var load = 0;
+    var jobs = [];
+    var insertionPoint = 0;
+    vw.setAntBodyColor(vw.antStore.get(key), Optionen.SpielerFarben[playerid]);
+    updateGO();
+    
+    function updateGO(){
+      vw.antStore.get(key).position.copy(toViewPos(pos));
+      vw.antStore.get(key).rotation.y = -heading / 180 * Math.PI + Math.PI;
+      if (load > 0) {
+        var sugar = vw.sugarBoxStore.get(key);
+        sugar.position.copy(toViewPos(pos, 5.5));
+      } else if (vw.sugarBoxStore.has(key)) {
+        vw.sugarBoxStore.remove(key);
+      }
+    }
+    
+    this.getPos = function(){
+      return pos;
+    }
+    
+    this.getPlayerid = function(){
+      return playerid;
+    }
+    
+    this.getJobs = function(){
+      return jobs;
+    }
+    
+    this.setPos = function(newpos){
+      pos.x = newpos.x;
+      pos.y = newpos.y;
+    }
+    
+    this.addJob = function(job){
+      jobs.splice(insertionPoint, 0, jobs);
+    }
+    
+    this.update = function(){
+      insertionPoint = jobs.length;
+      if (jobs.length > 0) {
+        var curJob = jobs[jobs.length - 1];
+        var finished = curJob.callback();
+        if (finished) {
+          var index = jobs.indexOf(curJob);
+          jobs.splice(index, 1);
+        }
+      } else {
+        
+      }
+    }
+  }
+  
+  
+  // JOB
+  function Job(callback){
+    this.callback = callback;
+  }
+  
   
 // ALL MANAGER
   var Sim = {
@@ -234,6 +302,7 @@ var Optionen = {
     , players : []
     , hills : []
     , sugars : []
+    , ants : []
     
     , playerCount:function(){
       return Sim.players.length;
@@ -253,25 +322,76 @@ var Optionen = {
     }
     
     , update:function(){
+    
+      Sim.ants.forEach(function(ant){
+        ant.update();
+      });
+      
+      Sim.hills.forEach(function(hill){
+        hill.update();
+      });
+      
       Sim.playground.update();
     }
-  
   }
   
   
-  // OUTER WRAPPER
+  // OUTER WRAPPER, well, not that beautiful
 
   var API = {
-        ants : []
-      
-      , addAnt:function(ant){
-        if (API.ants.length < Optionen.MaximaleSpieler){
-          API.ants.push(ant);
-        }
-      }
+      ants : []
+    
+    , staticPlayerId : undefined
+    , curAnt : undefined
+    , objStore : []
+    , keyStore : []
+    , objCounter : 0
+    
+    , callUserFunc:function(ant, func, arg){
+      func = Sim.players[ant.getPlayerid()].getKI()[func];
+      if (arg == undefined)
+        arg = [];
+      if (func == undefined)
+        return;
+      antMe.staticPlayerId = ant.getPlayerid();
+      antMe.curAnt = ant;
+      func.bind(antMe.pushObj(ant))(antMe.pushObj(arg));
+      antMe.staticPlayerId = undefined;
+      keyStore = [];
+    }
+    
+    , pushObj:function(obj){
+      var index = antMe.objStore.indexOf(obj);
+      if (index >= 0)
+        return registerKey(index);
+      var id = antMe.objCounter++;
+      antMe.objStore.push(obj);
+      return registerKey(id);
+    }
+    
+    , getObj:function(id){
+      return antMe.objStore[keyStore[id]];
+    }
+    
+    , registerKey(index){
+      var key = Math.random + "";
+      keyStore[key] = index;
+      return key;
+    }
   }  
 
-  am.LadeAmeise = API.addAnt;
+  am.LadeAmeise = function(ant){
+    // verify ants here
+    if (API.ants.length < Optionen.MaximaleSpieler){
+      API.ants.push(ant);
+    }
+  }
+  
+  global.GehSchritt = function(number){
+    if (API.staticPlayerId == undefined)
+      return;
+      // TODO
+  }
 
 
 
@@ -287,4 +407,4 @@ var Optionen = {
   am._sim = Sim;
 
 
-})(AntMe._vw, AntMe._simOpts, window, AntMe);
+})(AntMe._vw, AntMe._optionen, window, AntMe);

@@ -170,6 +170,7 @@ var AntMe = {};
         obj.children[0].children.forEach(function(o){
           o.material.color.setHex(0x0d0d0d);
         });
+        obj.scale.set(1.6,1.6,1.6);
         vw.ant0 = obj;
       });
       objectLoader.load("models/anthill.json", function ( obj ) {
@@ -200,8 +201,9 @@ var AntMe = {};
       });
       
       // sugar box
-      var sugarBoxGeo = new THREE.BoxGeometry( 2, 2, 2);
+      var sugarBoxGeo = new THREE.BoxGeometry( 1, 1, 1);
       vw.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
+      vw.sugarBox0.scale.set(1.6,1.6,1.6);
       
       // marker-sphere
       var geometry1 = new THREE.SphereGeometry(40,32,24);

@@ -2,7 +2,7 @@
 
 // START OF simulation pulsing: start, stop, interval, end
 
-(function(am, vw, Sim, SimOpts){
+(function(am, vw, Sim, Optionen){
 
   var SimPulse = {
       running : false
@@ -24,8 +24,8 @@
     }
     
     , tick:function(){
-      if (SimPulse.cycles >= SimOpts.SimulationCycles) {
-        end();
+      if (SimPulse.cycles >= Optionen.Runden) {
+        SimPulse.end();
         return;
       }
       Sim.update();
@@ -53,6 +53,6 @@
   // FINAL PLACE TO SEAL
   delete am._vw;
   delete am._sim;
-  delete am._simOpts;
+  delete am._optionen;
 
-})(AntMe, AntMe._vw, AntMe._sim, AntMe._simOpts);
+})(AntMe, AntMe._vw, AntMe._sim, AntMe._optionen);
