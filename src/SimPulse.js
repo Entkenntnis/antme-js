@@ -7,7 +7,7 @@
   var SimPulse = {
       running : false
     , nextTickTime : undefined
-    , simulationFps : 30.0
+    , simulationFps : 60.0
     , fpsInterval : undefined
     , needsRedraw : false
     , cycles : 0

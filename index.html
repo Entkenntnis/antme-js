@@ -44,15 +44,14 @@ Ant1.SiehtObst = function(apfel){
 
 Ant1.ObstErreicht = function(apfel){
   if (BrauchtNochTräger(apfel)) {
-    if (Nimm(apfel)) {
-      GeheZuBau();
-    }
+    Nimm(apfel);
+    GeheZuBau();
   }
 }
         
 AntMe.AmeiseLaden(Ant1);
 AntMe.AmeiseLaden(Ant1);
-AntMe.AmeiseLaden(Ant1);
+//AntMe.AmeiseLaden(Ant1);
 //AntMe.AmeiseLaden(Ant1);
 /*
 AntMe.AmeiseLaden({name:"ant2"});

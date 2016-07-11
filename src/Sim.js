@@ -34,16 +34,16 @@
     this.pos = pos
     this.id = antIndexCounter++;
     this.key = playerid + ':' + this.id
-    this.energy = this.Antenergy;
     this.destination = undefined;//{x:1000,y:1000};
     this.distance = 0;
     this.rotation = 0;
     this.destinationObj = undefined;
     this.bearing = 0;
-    this.Antenergy = SimOpts.AntEnergy[0];
+    this.AntEnergy = SimOpts.AntEnergy[0];
     this.viewRange = SimOpts.AntViewRange[0];
     this.rotationSpeed = SimOpts.AntRotationSpeed[0];
     this.maxLoad = SimOpts.AntLoad[0];
+    this.energy = this.AntEnergy;
     this.lap = 0;
     this.tired = false;
     this.maxSpeed = SimOpts.AntSpeed[0];
@@ -110,7 +110,6 @@
     this.energy = SimOpts.BugEnergy;
     this.rotation = 0;
     this.distance = 0;
-    this.energy = SimOpts.BugEnergy;
     this.heading = Math.round(Math.random()*360.0);
     this.fighting = false;
     this.moving = false;
@@ -396,7 +395,7 @@
         //## Falls eine Wanze im Kampf verwickelt: Angriffspunkte auf beteiligte
         //   Gegner verteilen. Betroffene Ameisen erhalten einen Aufruf auf
         //   WirdAngegriffen(Wanze)
-        Sim.bugs.forEach(function(bug){
+        /*Sim.bugs.forEach(function(bug){
           if (bug.fighting) {
             var bugAttackedAnts = Sim.objsNear(bug.pos, 4, Sim.ants);
             if (bugAttackedAnts.length == 0) {
@@ -407,7 +406,7 @@
               });
             }
           }
-        });
+        });*/
         // CALL: WirdAngegriffen(Wanze)
         
         
@@ -486,24 +485,24 @@
         //## Zielprüfung (Ameise prüft, ob sie das angestrebte Ziel erreich hat)
           if (ant.destination != undefined) {
             var distance = Math.sqrt(Sim.getDistanceSq(ant.pos, ant.destinationObj.pos));
-            if (distance < 2) {
-              // angekommen
-              var dest = ant.destinationObj;
+            var dest = ant.destinationObj;
+            if (dest instanceof Hill && distance < SimOpts.AntHillRadius) {
+              ant.tired = false;
+              ant.energy = ant.AntEnergy;
+              Sim.players[ant.playerid].points += ant.bearing;
+              ant.bearing = 0;
+              ant.heading += 180;
               ant.destination = undefined;
               ant.destinationObj = undefined;
-              if (dest instanceof Hill) {
-                ant.tired = false;
-                ant.energy = ant.AntEnergy;
-                Sim.players[ant.playerid].points += ant.bearing;
-                ant.bearing = 0;
-                ant.heading += 180;
-              } else if (dest instanceof Sugar && dest.amount > 0) {
-                antMe.callUserFunc(ant, "ZuckerErreicht", dest);
-              } else if (dest instanceof Apple) {
-                antMe.callUserFunc(ant, "ObstErreicht", dest);
-                
-              }
-            }
+            } else if (distance < 10 && dest instanceof Sugar && dest.amount > 0) {
+              ant.destination = undefined;
+              ant.destinationObj = undefined;
+              antMe.callUserFunc(ant, "ZuckerErreicht", dest);
+            } else if (distance < 16 && dest instanceof Apple && Sim.apples.indexOf(dest) >= 0) {
+              ant.destination = undefined;
+              ant.destinationObj = undefined;
+              antMe.callUserFunc(ant, "ObstErreicht", dest);
+            } 
             
           }
           
@@ -530,11 +529,17 @@
         
       //# Tote Ameisen werden vom Spielfeld entfernt
       Sim.ants.removeIf(function(ant){
-        if (ant.energy <= 0) {
+        if ( ant.energy <= 0) {
           vw.antStore.remove(ant.key);
           if (vw.sugarBoxStore.has(ant.key)) {
             vw.sugarBoxStore.remove(ant.key);
           }
+          Sim.apples.forEach(function(apple){
+            var index = apple.carries.indexOf(ant);
+            if (index >= 0) {
+              apple.carries.splice(index,1);
+            }
+          });
           return true;
         } else
           return false;
@@ -553,6 +558,9 @@
             apple.carries.forEach(function(c){
               c.load = 0;
               c.destination = undefined;
+              c.destinationObj = undefined;
+              c.rotation = 0;
+              c.distance = 0;
             });
             return true;
           }
@@ -591,11 +599,15 @@
           apple.carries.forEach(function(c){
             var dx = c.pos.x - sumx;
             var dy = c.pos.y - sumy;
+            var oldx = c.pos.x;
+            var oldy = c.pos.y;
             var length = Math.sqrt(Sim.getDistanceSq({x:sumx,y:sumy},c.pos));
-            if (length > 6) {
-              var scale = 6/length;
+            if (length > 16) {
+              var scale = 16/length;
               c.pos.x = sumx + dx*scale;
               c.pos.y = sumy + dy*scale;
+              var diff = Math.sqrt(Sim.getDistanceSq({x:oldx,y:oldy},c.pos));
+              c.lap -= diff;
               c.rotation = 0;
               c.distance = 0;
               c.updatePos();
@@ -702,11 +714,15 @@
       return hassugar;
     } else if (goody instanceof Apple){
       var apple = goody;
-      if (apple.carries.indexOf(ant) >= 0 ||
-          (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid))
+      if (Sim.apples.indexOf(apple) < 0)
+        return false;
+      if (apple.carries.indexOf(ant) >= 0)
+        return false;
+      if (apple.carries.length > 0 && ant.playerid != apple.carries[0].playerid)
         return false;
       apple.carries.push(ant);
       ant.load = ant.maxLoad;
+      console.log("neuer Träger" + apple.carries.length);
       return true;
     }
   } 
@@ -727,7 +743,9 @@
     var ant = antMe.curAnt;
     obst = antMe.getObj(obst);
     if (!(obst instanceof Apple))
-      return;
+      return false;
+    if (Sim.apples.indexOf(obst) < 0)
+      return false;
     if (obst.carries.length == 0)
       return true;
     else if (obst.carries.length < 6 && ant.playerid == obst.carries[0].playerid)
@@ -756,5 +774,6 @@
   
   // export
   am._sim = Sim;
+  global.Sim = Sim;
 
 })(AntMe._vw, AntMe._simOpts, window, AntMe);
