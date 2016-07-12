@@ -18,6 +18,22 @@
   function dist(a, b){
     return Math.sqrt(Math.pow(a.x-b.x,2) + Math.pow(a.y-b.y,2));
   }
+  
+  function closest(pos, objs, range){
+    var best = Infinity;
+    var bestobj = undefined;
+    objs.forEach(function(obj){
+      var d = dist(obj.getPos(), pos);
+      if (d < best) {
+        bestobj = obj;
+        best = d;
+      }
+    });
+    if (best < range) {
+      return bestobj;
+    }
+    return undefined;
+  }
 
 
 
@@ -148,6 +164,17 @@
         timeToNextSugar = Optionen.ZuckerWartezeit;
         Sim.sugars.push(new Sugar(this.getGoodyPos()));
       }
+      
+      var toRemove = [];
+      Sim.sugars.forEach(function(s){
+        if (s.getAmount() <= 0) {
+          toRemove.push(s);
+        }
+      });
+      toRemove.forEach(function(obj){
+        var index = Sim.sugars.indexOf(obj);
+        Sim.sugars.splice(index, 1);
+      });
     }
   }
 
@@ -220,11 +247,11 @@
     this.unload1Sugar = function(){
       if (amount > 0) {
         amount--;
+        updateGO();
         return true;
       } else {
         return false;
       }
-      updateGO();
     }
   }
   
@@ -233,6 +260,8 @@
     Ant.counter = Ant.counter || 1;
     var speed = Optionen.AmeiseGeschwindigkeit;
     var rotationSpeed = Optionen.AmeiseDrehgeschwindigkeit;
+    var range = Optionen.AmeiseSichtweite;
+    var maxLoad = Optionen.AmeiseTragkraft;
     var pos = _pos;
     var playerid = _playerid;
     var key = playerid + ":" + Ant.counter++;
@@ -284,12 +313,36 @@
     
     this.update = function(){
       insertionPoint = jobs.length;
+      
+      // sights
+      var isFocused = false;
+      if (jobs.length > 0) {
+        var index = jobs.length - 1;
+        var curCmd = jobs[index];
+        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
+          curCmd = jobs[--index];
+        }
+        while(curCmd.type == "action" && curCmd.parent != undefined) {
+          curCmd = curCmd.parent;
+        }
+        if (curCmd.info().type == "DEST") {
+          isFocused = true;
+        }
+      }
+      if (!isFocused) {
+        var sugar = closest(pos, Sim.sugars, range);
+        if (sugar != undefined) {
+          API.callUserFunc(this, "SiehtZucker", [sugar]);
+        }
+      }
+      
       if (jobs.length > 0) {
         var curJob = jobs[jobs.length - 1];
         var finished = curJob.callback.bind(this)();
         if (finished) {
           var index = jobs.indexOf(curJob);
-          jobs.splice(index, 1);
+          if (index >= 0)
+            jobs.splice(index, 1);
         }
       } else {
         API.callUserFunc(this, "Wartet");
@@ -348,14 +401,98 @@
       }];
     }
     
-    this.addGoJob = function(steps){
-      var funcs = actionMoveSteps(steps);
-      this.addJob(new Job("action", undefined, funcs[0], funcs[1]));
+    function actionTake(sugar){
+      return [function(){
+        var d = dist(pos, sugar.getPos());
+        if (d < 2) {
+          while(load < maxLoad) {
+            var t = sugar.unload1Sugar();
+            if (t) {
+              load++;
+            } else {
+              break;
+            }
+          }
+        }
+        return true;
+      }, function(){
+        return {type:"TAKE",value:sugar};
+      }];
     }
     
-    this.addTurnJob = function(degree){
+    function cmdReachPos(obj, range, callback, thisjob){
+      return [function(){
+        var des = obj.getPos();
+        var d = dist(pos, des);
+        if (d < range) {
+          callback.bind(this)();
+          return true;
+        } else {
+          var dx = des.x - pos.x;
+          var angle = heading;
+          if (des.y < pos.y) {
+            angle = (360-Math.acos(dx/d)/Math.PI*180.0)%360;
+          } else {
+            angle = (Math.acos(dx/d)/Math.PI*180.0)%360;
+          }
+          var rotation = angle - (heading%360);
+          rotation = Math.round(rotation);
+          if (rotation > 180) {
+            rotation -= 360;
+          }
+          if (rotation < -180) {
+            rotation += 360;
+          }
+          if (rotation != 0)
+            this.addTurnJob(rotation, thisjob);
+          this.addGoJob(Math.min(50, d), thisjob);
+          return false;
+        }
+      },function(){
+        return {type:"DEST",value:obj};
+      }];
+    }
+    
+    this.addGoJob = function(steps, parent){
+      var funcs = actionMoveSteps(steps);
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
+    this.addTurnJob = function(degree, parent){
       var funcs = actionTurn(degree);
-      this.addJob(new Job("action", undefined, funcs[0], funcs[1]));
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
+    this.addTakeJob = function(sugar, parent){
+      var funcs = actionTake(sugar);
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
+    this.goToSugar = function(sugar, parent){
+      var parent = new Job("command", parent);
+      var funcs = cmdReachPos(sugar, 1, function(){
+        API.callUserFunc(this, "ZuckerErreicht", [sugar]);
+      }, parent);
+      parent.callback = funcs[0];
+      parent.info = funcs[1];
+      jobs.splice(0, insertionPoint);
+      insertionPoint = 0;
+      this.addJob(parent);
+    }
+    
+    this.goToHome = function(parent){
+      var parent = new Job("command", parent);
+      var hill = Sim.hills[playerid];
+      var funcs = cmdReachPos(hill, 10, function(){
+        Sim.players[playerid].addPoints(load);
+        load = 0;
+        API.callUserFunc(this, "BauErreicht", [hill]);
+      }, parent);
+      parent.callback = funcs[0];
+      parent.info = funcs[1];
+      jobs.splice(0, insertionPoint);
+      insertionPoint = 0;
+      this.addJob(parent);
     }
   }
   
@@ -428,15 +565,14 @@
         return;
       API.staticPlayerId = ant.getPlayerid();
       API.curAnt = ant;
-      func.bind(API.pushObj(ant))(API.pushObj(arg));
+      func.apply(API.pushObj(ant), arg.map(API.pushObj));
       API.staticPlayerId = undefined;
       API.keyStore = [];
+      API.objStore = [];
+      API.objCounter = 0;
     }
     
     , pushObj:function(obj){
-      var index = API.objStore.indexOf(obj);
-      if (index >= 0)
-        return API.registerKey(index);
       var id = API.objCounter++;
       API.objStore.push(obj);
       return API.registerKey(id);
@@ -447,7 +583,7 @@
     }
     
     , registerKey(index){
-      var key = Math.random + "";
+      var key = Math.random() + "";
       API.keyStore[key] = index;
       return key;
     }
@@ -463,6 +599,8 @@
   global.GeheSchritte = function(number){
     if (API.staticPlayerId == undefined)
       return;
+    if (number == undefined)
+      number = 10000000;
     if (typeof number !== "number")
       return;
     API.curAnt.addGoJob(number);
@@ -483,10 +621,28 @@
       return Math.floor(Math.random()*(b-a))+a;
     }
   }
-
-
-
-
+  
+  global.GeheZuZiel = function(ziel){
+    if (API.staticPlayerId == undefined)
+      return;
+    var obj = API.getObj(ziel);
+    if (obj.constructor.name == "Sugar")
+      API.curAnt.goToSugar(obj);
+  }
+  
+  global.GeheZuBau = function(){
+    if (API.staticPlayerId == undefined)
+      return;
+    API.curAnt.goToHome();
+  }
+  
+  global.Nimm = function(obj){
+    if (API.staticPlayerId == undefined)
+      return;
+    var obj = API.getObj(obj);
+    if (obj.constructor.name == "Sugar")
+      API.curAnt.addTakeJob(obj);
+  }
 
 
 

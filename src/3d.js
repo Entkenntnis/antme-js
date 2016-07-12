@@ -201,7 +201,7 @@ var AntMe = {};
       // sugar box
       var sugarBoxGeo = new THREE.BoxGeometry( 1, 1, 1);
       vw.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
-      vw.sugarBox0.scale.set(1.6,1.6,1.6);
+      vw.sugarBox0.scale.set(2,2,2);
       
       // marker-sphere
       var geometry1 = new THREE.SphereGeometry(40,32,24);

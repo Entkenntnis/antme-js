@@ -24,9 +24,11 @@
     , ZuckerWartezeit : 125
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
-    , AmeisenMaximum : 30
+    , AmeisenMaximum : 60
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
+    , AmeiseSichtweite : 80
+    , AmeiseTragkraft : 5
   }
   
   

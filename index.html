@@ -19,21 +19,34 @@
         <script src="src/SimPulse.js"></script>
         <script>
         
-var Ant1 = {};
-Ant1.Antname = "ant1";
+var Davidmeise = {};
 
-Ant1.Wartet = function(){
+Davidmeise.Wartet = function(){
   GeheSchritte(Zufallszahl(10, 30));
   DreheWinkel(Zufallszahl(-40, 40));
 };
 
-Ant1.RandErreicht = function(){
+Davidmeise.RandErreicht = function(){
   DreheWinkel(120 + Zufallszahl(80));
   GeheSchritte(RestSchritte);
 }
+
+Davidmeise.SiehtZucker = function(zucker){
+  GeheZuZiel(zucker);
+}
+
+Davidmeise.ZuckerErreicht = function(zucker){
+  Nimm(zucker);
+  GeheZuBau();
+}
+
+Davidmeise.BauErreicht = function(){
+  DreheWinkel(180);
+  GeheSchritte();
+}
         
-AntMe.LadeAmeise(Ant1);
-AntMe.LadeAmeise(Ant1);
+AntMe.LadeAmeise(Davidmeise);
+//AntMe.LadeAmeise(Ant1);
 
 
 
