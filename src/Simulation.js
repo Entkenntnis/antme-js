@@ -60,6 +60,7 @@
     
     vw.gamefloor.geometry = new THREE.PlaneGeometry(width, height, 1, 1);
     vw.gamefloor.geometry.verticesNeedUpdate = true;
+    vw.setControlsBounds(width/2, height/2);
     
     this.getWidth = function(){
       return width;

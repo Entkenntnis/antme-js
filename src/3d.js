@@ -15,7 +15,7 @@ var AntMe = {};
     scene = new THREE.Scene();
     
     // the floor lies in the xz-plane, don't worry about aspect here, will be done on resize 
-    camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 10000);
+    camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 20000);
     camera.position.set(0, 600, 1700);
     
     // the worker in the shadow
@@ -29,12 +29,9 @@ var AntMe = {};
     
     // make it movable
     controls = new THREE.OrbitControls(camera);
-    controls.maxPolarAngle = Math.PI/2;
+    controls.maxPolarAngle = Math.PI/2 - 0.1;
     controls.maxDistance = 3000;
-    controls.minDistance = 500;	
-    controls.clamper = function(pos){
-      if (pos.y < 0.5) {pos.y = 0.5;} // should add clamper to protect skybox
-    };
+    controls.minDistance = 100;
     
     // handle loading
     manager = new THREE.LoadingManager();
@@ -140,7 +137,7 @@ var AntMe = {};
       floorTexture.wrapS = THREE.RepeatWrapping;
       floorTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(4, 4);
-      var floorMat = new THREE.MeshPhongMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture});
+      var floorMat = new THREE.MeshPhongMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture, specular:0x333300});
       vw.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
       vw.gamefloor.rotation.x = Math.PI / 2;
       scene.add(vw.gamefloor);
@@ -154,7 +151,7 @@ var AntMe = {};
           side:THREE.BackSide}));
       });
       var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
-      var skyboxGeom = new THREE.CubeGeometry( 5000, 5000, 5000, 1, 1, 1 );
+      var skyboxGeom = new THREE.CubeGeometry( 8000, 8000, 8000, 1, 1, 1 );
       var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
       vw.skybox = skybox;
       scene.add( skybox );
@@ -163,7 +160,7 @@ var AntMe = {};
       var ambient = new THREE.AmbientLight( 0x444444 );
       scene.add( ambient );
       var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-      directionalLight.position.set( 1, 2, 3 ).normalize();
+      directionalLight.position.set( 2, 2, 2 ).normalize();
       scene.add( directionalLight );
     
       // get models
@@ -252,6 +249,11 @@ var AntMe = {};
       [6, 7].forEach(function(id){
         bug.children[0].children[id].material.color.setHex(color);
       });
+    }
+    
+    , setControlsBounds : function(x, y){
+      controls.maxX = x,
+      controls.maxZ = y;
     }
   }
   

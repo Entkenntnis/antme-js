@@ -48,8 +48,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.enableDamping = false;
 	this.dampingFactor = 0.25;
 	
-	// NEW this user settable function is called after moving and clamps the position
-	this.clamper = function(pos){}
+	// 
+	this.maxX = Infinity;
+	this.maxZ = Infinity;
 
 	// This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
 	// Set to false to disable zooming
@@ -161,8 +162,20 @@ THREE.OrbitControls = function ( object, domElement ) {
 			// restrict radius to be between desired limits
 			spherical.radius = Math.max( scope.minDistance, Math.min( scope.maxDistance, spherical.radius ) );
 
+      // stay in y = 0
+      panOffset.setY(0);
+    
 			// move target to panned location
 			scope.target.add( panOffset );
+			
+      // stay in bounds of scope.maxXZ
+      if (Math.abs(scope.target.x) > scope.maxX) {
+        scope.target.setX(scope.maxX*Math.sign(scope.target.x));
+      }
+      
+      if (Math.abs(scope.target.z) > scope.maxZ) {
+        scope.target.setZ(scope.maxZ*Math.sign(scope.target.z));
+      }
 
 			offset.setFromSpherical( spherical );
 
@@ -201,12 +214,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 				lastQuaternion.copy( scope.object.quaternion );
 				zoomChanged = false;
         
-			  scope.clamper(scope.object.position);
 				return true;
 
 			}
 
-			scope.clamper(scope.object.position);
 			return false;
 
 		};
