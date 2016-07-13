@@ -51,6 +51,22 @@
     var KI = _KI;
     var points = 0;
     
+    var para = document.createElement("DIV");
+    para.innerHTML = KI.Name;
+    para.style.display = "flex";
+    para.style.fontWeight = "bold";
+    var hex = Optionen.SpielerFarben[id];
+    var hexS = hex.toString(16);
+    while (hexS.length < 6)
+      hexS = "0" + hexS;
+    para.style.color = "#" + hexS;
+    var pointsE = document.createElement("DIV");
+    pointsE.id = "player" + id;
+    pointsE.style.marginLeft = "50px";
+    para.appendChild(pointsE);
+    document.getElementById("hud").appendChild(para);
+    
+    
     this.getId = function(){
       return id;
     }
@@ -65,7 +81,10 @@
     
     this.addPoints = function(amount){
       points = Math.max(0, points + amount);
+      pointsE.innerHTML = points + " Punkte";
     }
+    
+    this.addPoints(0);
   }
   
   

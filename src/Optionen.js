@@ -8,7 +8,7 @@
   
  var Optionen = {
       MaximaleSpieler : 8
-    , Runden : 5000
+    , Runden : 500
     , SpielfeldVerhältnis : 4.0/3.0
     , SpielfeldGrundGröße : 550000
     , HügelAbstand : 300
@@ -27,7 +27,7 @@
     , AmeisenMaximum : 60
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
-    , AmeiseSichtweite : 80
+    , AmeiseSichtweite : 70
     , AmeiseTragkraft : 5
   }
   

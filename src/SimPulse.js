@@ -11,9 +11,13 @@
     , fpsInterval : undefined
     , needsRedraw : false
     , cycles : 0
+    , simStatus : undefined
     
     , init:function(){
       // call this to start simulation
+      SimPulse.simStatus = document.createElement("DIV");
+      document.getElementById("hud").appendChild(SimPulse.simStatus);
+      
       SimPulse.needsRedraw = true;
       SimPulse.running = true;
       SimPulse.fpsInterval = 1000.0 / SimPulse.simulationFps;
@@ -29,6 +33,7 @@
         return;
       }
       Sim.update();
+      SimPulse.simStatus.innerHTML = "Runde " + SimPulse.cycles + "/" + Optionen.Runden;
       SimPulse.cycles++;
       vw.needsRedraw = true;
       if (SimPulse.running) {
@@ -44,6 +49,7 @@
     
     , end:function(){
       SimPulse.running = false;
+      SimPulse.simStatus.innerHTML = "beendet";
     }
   }
   

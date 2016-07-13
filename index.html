@@ -20,6 +20,7 @@
         <script>
         
 var Davidmeise = {};
+Davidmeise.Name = "David's Ameise";
 
 Davidmeise.Wartet = function(){
   GeheSchritte(Zufallszahl(10, 30));
@@ -46,7 +47,7 @@ Davidmeise.BauErreicht = function(){
 }
         
 AntMe.LadeAmeise(Davidmeise);
-//AntMe.LadeAmeise(Ant1);
+AntMe.LadeAmeise({Name:"Demo-Meise"});
 
 
 
@@ -54,8 +55,12 @@ AntMe.LadeAmeise(Davidmeise);
 AntMe.StarteSimulation();
 
         </script>
-        <<div style="position: absolute; z-index: 1; left: 50px; top: 50px; width:400px; height:30px;font-size:1em;color:white;font-family:arial">
+        <div style="position: absolute; z-index: 1; left: 400px; top: 30px; width:400px; height:30px;font-size:1em;color:white;font-family:arial">
 	<p>Maus: Links - drehen / Rechts - ziehen<br />Touch: Wischen - ziehen / lang tippen - drehen</p>
+</div>
+
+<div id="hud" style="position: absolute; z-index: 2; left: 50px; top: 50px;padding:4px;font-size:1em;font-family:arial;background-color:rgba(255,255,255,0.5);">
+	
 </div>
     </body>
 </html>
