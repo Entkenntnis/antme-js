@@ -29,6 +29,7 @@
     , AmeiseDrehgeschwindigkeit : 8
     , AmeiseSichtweite : 70
     , AmeiseTragkraft : 5
+    , PunkteProZucker : 5
   }
   
   

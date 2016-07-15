@@ -503,7 +503,7 @@
       var parent = new Job("command", parent);
       var hill = Sim.hills[playerid];
       var funcs = cmdReachPos(hill, 10, function(){
-        Sim.players[playerid].addPoints(load);
+        Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
         load = 0;
         API.callUserFunc(this, "BauErreicht", [hill]);
       }, parent);

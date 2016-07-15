@@ -33,7 +33,8 @@
         return;
       }
       Sim.update();
-      SimPulse.simStatus.innerHTML = "Runde " + SimPulse.cycles + "/" + Optionen.Runden;
+      var runState = Math.round(SimPulse.cycles / Optionen.Runden * 100);
+      SimPulse.simStatus.innerHTML = "Fortschritt: " + runState + "%";
       SimPulse.cycles++;
       vw.needsRedraw = true;
       if (SimPulse.running) {
