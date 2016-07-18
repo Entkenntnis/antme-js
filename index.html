@@ -23,8 +23,6 @@ var Davidmeise = {};
 Davidmeise.Name = "David's Ameise";
 
 Davidmeise.Wartet = function(){
-  GeheSchritte(Zufallszahl(10, 30));
-  DreheWinkel(Zufallszahl(-40, 40));
 };
 
 Davidmeise.RandErreicht = function(){
@@ -33,21 +31,41 @@ Davidmeise.RandErreicht = function(){
 }
 
 Davidmeise.SiehtZucker = function(zucker){
-  GeheZuZiel(zucker);
+  //GeheZuZiel(zucker);
 }
 
 Davidmeise.ZuckerErreicht = function(zucker){
-  Nimm(zucker);
-  GeheZuBau();
+  //Nimm(zucker);
+  //GeheZuBau();
 }
 
 Davidmeise.BauErreicht = function(){
   DreheWinkel(180);
   GeheSchritte();
 }
+
+Davidmeise.IstGeboren = function(){
+  //GeheZuBau();
+}
+
+Davidmeise.Tick = function(){
+  if (!Ziel) {
+    var zucker = RiecheNachZucker();
+    if (zucker) {
+      GeheZuZiel(zucker);
+      Nimm(zucker);
+      GeheSchritte(100);
+      GeheZuBau();
+    }
+  }
+  if (Untätig) {
+    GeheSchritte(Zufallszahl(10, 30));
+    DreheWinkel(Zufallszahl(-40, 40));
+  }
+}
         
 AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise({Name:"Demo-Meise"});
+//AntMe.LadeAmeise({Name:"Demo-Meise"});
 
 
 

@@ -18,18 +18,19 @@
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
     , ZuckerGröße : 1000
     , ZuckerVergrößerung : 0.2
-    , NahrungMindestEntfernung : 300
+    , NahrungMindestEntfernung : 200
     , NahrungMaximalEntfernung : 1500
     , NahrungAbstand : 100
     , ZuckerWartezeit : 125
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
-    , AmeisenMaximum : 60
+    , AmeisenMaximum : 1
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
-    , AmeiseSichtweite : 70
+    , AmeiseSichtweite : 700
     , AmeiseTragkraft : 5
     , PunkteProZucker : 5
+    , ZuckerVerlangsamung : 0.75
   }
   
   

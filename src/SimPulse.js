@@ -59,7 +59,7 @@
   
   // FINAL PLACE TO SEAL
   delete am._vw;
-  delete am._sim;
+  //delete am._sim;
   delete am._optionen;
 
 })(AntMe, AntMe._vw, AntMe._sim, AntMe._optionen);
