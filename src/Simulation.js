@@ -61,54 +61,7 @@
   var SUGAR = "Sugar";
   var HILL = "Hill";
   
-  global.ZUCKER = SUGAR;
-  global.HÜGEL = HILL;
-
-  Object.defineProperty(global, 'Ziel', {
-    get: function() {
-      if (API.staticPlayerId === undefined)
-        return undefined;
-      var destination = undefined;
-      var jobs = API.curAnt.getJobs();
-      if (jobs.length > 0) {
-        var index = jobs.length - 1;
-        var curCmd = jobs[index];
-        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
-          curCmd = jobs[--index];
-        }
-        while(curCmd.type == "action" && curCmd.parent != undefined) {
-          curCmd = curCmd.parent;
-        }
-        var info = curCmd.info();
-        if (info.type == "DEST") {
-          if (info.value.constructor.name == "Sugar") {
-            destination = SUGAR;
-          } else if (info.value.constructor.name == "Hill") {
-            destination = HILL;
-          }
-        }
-      }
-      return destination;
-    },
-    set: function(name) { }
-  });
   
-  var antProp = function(name, f){
-    Object.defineProperty(global, name, {
-      get: function() {
-        if (API.staticPlayerId === undefined)
-          return undefined;
-        return f();
-      },
-      set: function(name) { }
-    });
-  }
-  
-  antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
-  antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
-  antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
-  antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
-  antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
 
 
 
@@ -530,7 +483,7 @@
           return true;
         } else {
           var angle = getDir(pos, des);
-          var rotation = getRotation(heading, angle) + Math.floor(Math.random()*30-15);
+          var rotation = getRotation(heading, angle) + Math.floor(Math.random()*20-10);
           if (rotation != 0)
             this.addTurnJob(rotation, thisjob);
           this.addGoJob(Math.min(50, d), thisjob);
@@ -734,7 +687,55 @@
     }
   }
   
+  global.ZUCKER = SUGAR;
+  global.HÜGEL = HILL;
+
+  Object.defineProperty(global, 'Ziel', {
+    get: function() {
+      if (API.staticPlayerId === undefined)
+        return undefined;
+      var destination = undefined;
+      var jobs = API.curAnt.getJobs();
+      if (jobs.length > 0) {
+        var index = jobs.length - 1;
+        var curCmd = jobs[index];
+        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
+          curCmd = jobs[--index];
+        }
+        while(curCmd.type == "action" && curCmd.parent != undefined) {
+          curCmd = curCmd.parent;
+        }
+        var info = curCmd.info();
+        if (info.type == "DEST") {
+          if (info.value.constructor.name == "Sugar") {
+            destination = SUGAR;
+          } else if (info.value.constructor.name == "Hill") {
+            destination = HILL;
+          }
+        }
+      }
+      return destination;
+    },
+    set: function(name) { }
+  });
   
+  var antProp = function(name, f){
+    Object.defineProperty(global, name, {
+      get: function() {
+        if (API.staticPlayerId === undefined)
+          return undefined;
+        return f();
+      },
+      set: function(name) { }
+    });
+  }
+  
+  antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
+  antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
+  antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
+  antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
+  antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
+  antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
   
   global.GeheSchritte = function(number){
     if (API.staticPlayerId == undefined)
@@ -768,6 +769,8 @@
     var obj = API.getObj(ziel);
     if (obj.constructor.name == "Sugar")
       API.curAnt.goToSugar(obj);
+    if (obj.constructor.name == "Hill")
+      API.curAnt.goToHome();
   }
   
   global.GeheZuBau = function(){
