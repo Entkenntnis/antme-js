@@ -107,27 +107,27 @@ var AntMe = {};
 
   // START OF 3d view related stuff
 
-  var vw = {
-      ant0 : undefined
-    , bug0 : undefined
-    , hill0 : undefined
-    , sugar0 : undefined
-    , apple0 : undefined
-    , sugarBox0 : undefined
-    , marker0 : undefined
-    , gamefloor : undefined
-    , skybox : undefined
-    , antStore : undefined
-    , hillStore : undefined
-    , sugarStore : undefined
-    , appleStore : undefined
-    , bugStore : undefined
-    , sugarBoxStore : undefined
-    , markerStore : undefined
-    , needRedraw : true
-    , onExtLoad : function(){}
+  var ViewController = function(){
+    this.ant0 = undefined
+    this.bug0 = undefined
+    this.hill0 = undefined
+    this.sugar0 = undefined
+    this.apple0 = undefined
+    this.sugarBox0 = undefined
+    this.marker0 = undefined
+    this.gamefloor = undefined
+    this.skybox = undefined
+    this.antStore = undefined
+    this.hillStore = undefined
+    this.sugarStore = undefined
+    this.appleStore = undefined
+    this.bugStore = undefined
+    this.sugarBoxStore = undefined
+    this.markerStore = undefined
+    this.needRedraw = true
+    this.onExtLoad = function(){}
     
-    , load : function(){
+    this.load = function(){
       
       var objectLoader = new THREE.ObjectLoader(manager);
       var textureLoader = new THREE.TextureLoader(manager);
@@ -138,9 +138,9 @@ var AntMe = {};
       floorTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(4, 4);
       var floorMat = new THREE.MeshPhongMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture, specular:0x333300});
-      vw.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
-      vw.gamefloor.rotation.x = Math.PI / 2;
-      scene.add(vw.gamefloor);
+      this.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
+      this.gamefloor.rotation.x = Math.PI / 2;
+      scene.add(this.gamefloor);
     
       // skybox
       var materialArray = [];
@@ -153,7 +153,7 @@ var AntMe = {};
       var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
       var skyboxGeom = new THREE.CubeGeometry( 8000, 8000, 8000, 1, 1, 1 );
       var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
-      vw.skybox = skybox;
+      this.skybox = skybox;
       scene.add( skybox );
       
       // light it up
@@ -169,8 +169,8 @@ var AntMe = {};
           o.material = new THREE.MeshLambertMaterial({color:0x000000});
         });
         obj.scale.set(1.6,1.6,1.6);
-        vw.ant0 = obj;
-      });
+        this.ant0 = obj;
+      }.bind(this));
       objectLoader.load("models/anthill.json", function ( obj ) {
         var earthTexture = textureLoader.load( "assets/earth.jpg" );
         var mat = new THREE.MeshPhongMaterial({color:0x999966});
@@ -178,36 +178,36 @@ var AntMe = {};
         obj.children[0].children[1].material = mat;
         obj.children[0].children[0].material.color.setHex(0x000000);
         obj.children[0].children[2].material.color.setHex(0xffffff);
-        vw.hill0 = obj;
-      });
+        this.hill0 = obj;
+      }.bind(this));
       objectLoader.load("models/apple.json", function ( obj ) {
         obj.children[0].children[0].material.color.setHex(0x00cc00);
         obj.children[0].children[1].material.color.setHex(0x66aa00);
         obj.scale.set(2.6, 2.6, 2.6);
-        vw.apple0 = obj;
-      });
+        this.apple0 = obj;
+      }.bind(this));
       objectLoader.load("models/bug.json", function ( obj ) {
         obj.children[0].children.forEach(function(o){
           o.material.color.setHex(0x000000);
           o.material.specular.setHex(0x00dddd);
         });
-        vw.bug0 = obj;
-      });
+        this.bug0 = obj;
+      }.bind(this));
       objectLoader.load("models/sugar.json", function ( obj ) {
         obj.children[0].children[0].material.color.setHex(0xffffff);
-        vw.sugar0 = obj;
-      });
+        this.sugar0 = obj;
+      }.bind(this));
       
       // sugar box
       var sugarBoxGeo = new THREE.BoxGeometry( 1, 1, 1);
-      vw.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
-      vw.sugarBox0.scale.set(2,2,2);
+      this.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
+      this.sugarBox0.scale.set(2,2,2);
       
       // marker-sphere
       var geometry1 = new THREE.SphereGeometry(40,32,24);
       var material1 = new THREE.MeshLambertMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
       var sphere1 = new THREE.Mesh(geometry1, material1);
-      vw.marker0 = sphere1;
+      this.marker0 = sphere1;
 
       // debugging circle
       var radius   = 100,
@@ -224,38 +224,40 @@ var AntMe = {};
       //scene.add( line );
     }
     
-    , onLoad : function(){
+    this.onLoad = function(){
       // open stores
-      vw.antStore = new UnitStore(vw.ant0);
-      vw.hillStore = new UnitStore(vw.hill0);
-      vw.appleStore = new UnitStore(vw.apple0);
-      vw.bugStore = new UnitStore(vw.bug0);
-      vw.sugarStore = new UnitStore(vw.sugar0);
-      vw.sugarBoxStore = new UnitStore(vw.sugarBox0);
-      vw.markerStore = new UnitStore(vw.marker0);
+      this.antStore = new UnitStore(this.ant0);
+      this.hillStore = new UnitStore(this.hill0);
+      this.appleStore = new UnitStore(this.apple0);
+      this.bugStore = new UnitStore(this.bug0);
+      this.sugarStore = new UnitStore(this.sugar0);
+      this.sugarBoxStore = new UnitStore(this.sugarBox0);
+      this.markerStore = new UnitStore(this.marker0);
     }
     
-    , setAntBodyColor : function(ant, c){
+    this.setAntBodyColor = function(ant, c){
       [/*10,*/ 7, 6].forEach(function(id){
         ant.children[0].children[id].material = new THREE.MeshPhongMaterial({color:c});
       });
     }
     
-    , setHillFlagColor : function(hill, c){
+    this.setHillFlagColor = function(hill, c){
       hill.children[0].children[2].material = new THREE.MeshPhongMaterial({color:c});
     }
     
-    , setBugEyeColor : function(bug, color) {
+    this.setBugEyeColor = function(bug, color) {
       [6, 7].forEach(function(id){
         bug.children[0].children[id].material.color.setHex(color);
       });
     }
     
-    , setControlsBounds : function(x, y){
+    this.setControlsBounds = function(x, y){
       controls.maxX = x,
       controls.maxZ = y;
     }
-  }
+  };
+  
+  var vw = new ViewController();
   
   // export
   am._vw = vw;

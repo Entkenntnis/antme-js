@@ -1,15 +1,14 @@
-"use strict";
+
 
 // START OF simulation pulsing: start, stop, interval, end
 
-(function(am, vw, Sim, Optionen){
-
+(function (am, vw, Sim, Optionen) {
+  "use strict";
+  
   var SimPulse = {
       running : false
-    , nextTickTime : undefined
-    , simulationFps : 60.0
-    , fpsInterval : undefined
-    , needsRedraw : false
+    , startTime : undefined
+    , simulationFps : Optionen.TicksProSekunde
     , cycles : 0
     , simStatus : undefined
     
@@ -23,7 +22,7 @@
       SimPulse.fpsInterval = 1000.0 / SimPulse.simulationFps;
       SimPulse.cycles = 0;
       Sim.init();
-      SimPulse.nextTickTime = Date.now() + SimPulse.simulationFps;
+      SimPulse.startTime = Date.now();
       SimPulse.tick();
     }
     
@@ -32,19 +31,19 @@
         SimPulse.end();
         return;
       }
-      Sim.update();
-      var runState = Math.round(SimPulse.cycles / Optionen.Runden * 100);
-      SimPulse.simStatus.innerHTML = "Fortschritt: " + runState + "%";
-      SimPulse.cycles++;
-      vw.needsRedraw = true;
+      var elapsedTime = Date.now() - SimPulse.startTime;
+      var targetCycle = elapsedTime / 1000 * SimPulse.simulationFps;
+      var skippedFrames = 0;
+      while(SimPulse.cycles < targetCycle && skippedFrames < Optionen.MaximalÜbersprungeneFrames){
+        Sim.update();
+        var runState = Math.round(SimPulse.cycles / Optionen.Runden * 100);
+        SimPulse.simStatus.innerHTML = "Fortschritt: " + runState + "%";
+        SimPulse.cycles++;
+        skippedFrames++;
+        vw.needsRedraw = true;
+      }
       if (SimPulse.running) {
-        // make sure we are really running the right fps
-        var curTime = Date.now();
-        var diff = SimPulse.nextTickTime - curTime;
-        var interval = SimPulse.fpsInterval + diff;
-        if (interval < 0) interval = 0;
-        SimPulse.nextTickTime = curTime + SimPulse.fpsInterval;
-        setTimeout(SimPulse.tick,interval);
+        setTimeout(SimPulse.tick,2);
       }
     }
     

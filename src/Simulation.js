@@ -1,28 +1,29 @@
-"use strict";
+
 
 // encapsulate our project
-(function(vw, Optionen, global, am){
-
+(function (vw, Optionen, global, am) {
+  "use strict";
 
 // protected helper functions
 
-  function toViewPos(pos, height){
-    if (height == undefined)
+  function toViewPos(pos, height) {
+    if (height === undefined) {
       height = 0;
+    }
     return new THREE.Vector3(
-      pos.x-Sim.playground.getWidth()/2.0,
+      pos.x - Sim.playground.getWidth() / 2.0,
       height,
-      pos.y-Sim.playground.getHeight()/2.0);
+      pos.y - Sim.playground.getHeight() / 2.0);
   }
   
-  function dist(a, b){
-    return Math.sqrt(Math.pow(a.x-b.x,2) + Math.pow(a.y-b.y,2));
+  function dist(a, b) {
+    return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
   }
   
-  function closest(pos, objs, range){
+  function closest(pos, objs, range) {
     var best = Infinity;
     var bestobj = undefined;
-    objs.forEach(function(obj){
+    objs.forEach(function(obj) {
       var d = dist(obj.getPos(), pos);
       if (d < best) {
         bestobj = obj;
@@ -35,7 +36,7 @@
     return undefined;
   }
   
-  function getDir(pos, des){
+  function getDir(pos, des) {
     var d = dist(pos, des);
     var dx = des.x - pos.x;
     var angle = 0;
@@ -47,7 +48,7 @@
     return Math.round(angle);
   }
   
-  function getRotation(heading,  angle){
+  function getRotation(heading,  angle) {
     var rotation = angle - (heading%360);
     if (rotation > 180) {
       rotation -= 360;
@@ -68,7 +69,7 @@
 
 
     // PLAYER
-  function Player(_id, _KI){
+  function Player(_id, _KI) {
     var id = _id;
     var KI = _KI;
     var points = 0;
@@ -89,19 +90,19 @@
     document.getElementById("hud").appendChild(para);
     
     
-    this.getId = function(){
+    this.getId = function() {
       return id;
     }
     
-    this.getKI = function(){
+    this.getKI = function() {
       return KI;
     }
     
-    this.getPoints = function(){
+    this.getPoints = function() {
       return points;
     }
     
-    this.addPoints = function(amount){
+    this.addPoints = function(amount) {
       points = Math.max(0, points + amount);
       pointsE.innerHTML = points + " Punkte";
     }
@@ -111,7 +112,7 @@
   
   
     // PLAYGROUND
-  function Playground(_width, _height){
+  function Playground(_width, _height) {
     var width = _width;
     var height = _height;
     
@@ -119,21 +120,21 @@
     vw.gamefloor.geometry.verticesNeedUpdate = true;
     vw.setControlsBounds(width/2, height/2);
     
-    this.getWidth = function(){
+    this.getWidth = function() {
       return width;
     }
     
-    this.getHeight = function(){
+    this.getHeight = function() {
       return height;
     }
     
-    this.randomPos = function(){
+    this.randomPos = function() {
       return {
         x:Math.random()*width,
         y:Math.random()*height};
     }
     
-    this.isInBound = function(pos, margin){
+    this.isInBound = function(pos, margin) {
       if (margin == undefined)
         margin = 0;
       if (pos.x < margin || pos.y < margin)
@@ -143,12 +144,12 @@
       return true;
     }
     
-    this.getHillPos = function(){
+    this.getHillPos = function() {
       var pos;
       var limit = 100;
       while(limit > 0) {
         pos = this.randomPos();
-        if (!this.isInBound(pos, Optionen.HügelRandAbstand)){
+        if (!this.isInBound(pos, Optionen.HügelRandAbstand)) {
           continue;
         }
         var isGood = true;
@@ -163,7 +164,7 @@
       return pos;
     }
     
-    this.getGoodyPos = function(){
+    this.getGoodyPos = function() {
       var pos;
       var limit = 100;
       while (limit > 0) {
@@ -184,7 +185,7 @@
         if (toNear) continue;
         if (!atLeastNear) continue;
         toNear = false;
-        var checkDist = function(obj){
+        var checkDist = function(obj) {
           var distance = dist(obj.getPos(), pos);
           if (distance < Optionen.NahrungAbstand) {
             toNear = true;
@@ -199,7 +200,7 @@
     
     // spawning
     var timeToNextSugar = Optionen.ZuckerWartezeit;
-    this.update = function(){
+    this.update = function() {
       var maximalSugars = (Sim.playerCount() + 1) * Optionen.ZuckerProSpieler;
       if (timeToNextSugar-- <= 0 && Sim.sugars.length < maximalSugars) {
         timeToNextSugar = Optionen.ZuckerWartezeit;
@@ -207,12 +208,12 @@
       }
       
       var toRemove = [];
-      Sim.sugars.forEach(function(s){
+      Sim.sugars.forEach(function(s) {
         if (s.getAmount() <= 0) {
           toRemove.push(s);
         }
       });
-      toRemove.forEach(function(obj){
+      toRemove.forEach(function(obj) {
         var index = Sim.sugars.indexOf(obj);
         Sim.sugars.splice(index, 1);
       });
@@ -229,22 +230,22 @@
     vw.setHillFlagColor(vw.hillStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
-    function updateGO(){
+    function updateGO() {
       vw.hillStore.get(key).position.copy(toViewPos(pos));
     }
     
-    this.getPos = function(){
+    this.getPos = function() {
       return pos;
     }
     
-    this.getPlayerid = function(){
+    this.getPlayerid = function() {
       return playerid;
     }
     
     var timeToNextAnt = Optionen.AmeiseWartezeit;
-    this.update = function(){
+    this.update = function() {
       var ownAnts = 0;
-      Sim.ants.forEach(function(ant){
+      Sim.ants.forEach(function(ant) {
         if (ant.getPlayerid() == playerid)
           ownAnts++;
       });
@@ -266,14 +267,14 @@
   
   
     // SUGAR
-  function Sugar(_pos){
+  function Sugar(_pos) {
     Sugar.counter = Sugar.counter || 1;
     var pos = _pos;
     var key = Sugar.counter++;
     var amount = Optionen.ZuckerGröße;
     updateGO();
     
-    function updateGO(){
+    function updateGO() {
       var GO = vw.sugarStore.get(key);
       GO.position.copy(toViewPos(pos));
       var linScale = amount / Optionen.ZuckerGröße * Optionen.ZuckerVergrößerung;
@@ -281,15 +282,15 @@
       GO.scale.set(scale, scale, scale);
     }
     
-    this.getAmount = function(){
+    this.getAmount = function() {
       return amount;
     }
     
-    this.getPos = function(){
+    this.getPos = function() {
       return pos;
     }
     
-    this.unload1Sugar = function(){
+    this.unload1Sugar = function() {
       if (amount > 0) {
         amount--;
         updateGO();
@@ -301,7 +302,7 @@
   }
   
     // ANT
-  function Ant(_pos, _playerid){
+  function Ant(_pos, _playerid) {
     Ant.counter = Ant.counter || 1;
     var speed = Optionen.AmeiseGeschwindigkeit;
     var rotationSpeed = Optionen.AmeiseDrehgeschwindigkeit;
@@ -317,7 +318,7 @@
     vw.setAntBodyColor(vw.antStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
-    function updateGO(){
+    function updateGO() {
       vw.antStore.get(key).position.copy(toViewPos(pos));
       vw.antStore.get(key).rotation.y = -heading / 180 * Math.PI + Math.PI;
       if (load > 0) {
@@ -328,57 +329,57 @@
       }
     }
     
-    this.getPos = function(){
+    this.getPos = function() {
       return pos;
     }
     
-    this.getPlayerid = function(){
+    this.getPlayerid = function() {
       return playerid;
     }
     
-    this.getJobs = function(){
+    this.getJobs = function() {
       return jobs;
     }
     
-    this.getRange = function(){
+    this.getRange = function() {
       return range;
     }
     
-    this.getLoad = function(){
+    this.getLoad = function() {
       return load;
     }
     
-    this.getHeading = function(){
+    this.getHeading = function() {
       return heading;
     }
     
-    this.getMaxLoad = function(){
+    this.getMaxLoad = function() {
       return maxLoad;
     }
     
-    this.setPos = function(newpos){
+    this.setPos = function(newpos) {
       pos.x = newpos.x;
       pos.y = newpos.y;
       updateGO();
     }
     
-    this.turn = function(degree){
+    this.turn = function(degree) {
       heading += Math.round(degree);
       heading %= 360;
       updateGO();
     }
     
-    this.addJob = function(job){
+    this.addJob = function(job) {
       jobs.splice(insertionPoint, 0, job);
     }
     
-    this.stop = function(){
+    this.stop = function() {
       jobs = [];
     }
     
-    function actionMoveSteps(_steps){
+    function actionMoveSteps(_steps) {
       var steps = _steps;
-      return [function(){
+      return [function() {
         var toMove = 0;
         var finished = false;
         var curSpeed = speed;
@@ -396,7 +397,7 @@
         var newx = pos.x + toMove*Math.cos(heading/180*Math.PI);
         var newy = pos.y + toMove*Math.sin(heading/180*Math.PI);
         var newpos = {x:newx,y:newy};
-        if (Sim.playground.isInBound(newpos, 2)){
+        if (Sim.playground.isInBound(newpos, 2)) {
           this.setPos(newpos);
         } else {
           finished = true;
@@ -406,14 +407,14 @@
         }
         return finished;
       },
-      function(){
+      function() {
         return {type:"GO", value:steps};
       }];
     }
     
-    function actionTurn(_degree){
+    function actionTurn(_degree) {
       var degree = _degree;
-      return [function(){
+      return [function() {
         var toTurn = 0;
         var finished = false;
         if (Math.abs(degree) < rotationSpeed) {
@@ -426,26 +427,26 @@
         this.turn(toTurn);
         return finished;
       },
-      function(){
+      function() {
         return {type:"TURN", value:degree};
       }];
     }
     
-    function actionTurnTo(_angle){
+    function actionTurnTo(_angle) {
       var angle = _angle;
-      return [function(){
+      return [function() {
         var rotation = getRotation(heading, angle);
         if (rotation != 0)
           this.addTurnJob(rotation);
         return true;
       },
-      function(){
+      function() {
         return {type:"TURNTO", value:angle};
       }];
     }
     
-    function actionTake(sugar){
-      return [function(){
+    function actionTake(sugar) {
+      return [function() {
         var d = dist(pos, sugar.getPos());
         if (d < 2) {
           while(load < maxLoad) {
@@ -459,23 +460,48 @@
         }
         updateGO();
         return true;
-      }, function(){
+      }, function() {
         return {type:"TAKE",value:sugar};
       }];
     }
     
-    function actionDrop(){
-      return [function(){
+    function actionDrop() {
+      return [function() {
         load = 0;
         updateGO();
         return true;
-      }, function(){
+      }, function() {
         return {type:"DROP"};
       }];
     }
     
-    function cmdReachPos(obj, range, callback, thisjob){
-      return [function(){
+    function actionWait(_rounds) {
+      var rounds = _rounds;
+      return [function() {
+        if (rounds-- > 0) {
+          return false;
+        } else {
+          return true;
+        }
+      }, function() {
+        return {type:"WAIT",value:rounds};
+      }];
+    }
+    
+    function actionCustom(_f) {
+      var f = _f;
+      return [function() {
+        var ret = f();
+        if (ret !== undefined)
+          return ret;
+        return true;
+      }, function() {
+        return {type:"CUSTOM",value:f};
+      }];
+    }
+    
+    function cmdReachPos(obj, range, callback, thisjob) {
+      return [function() {
         var des = obj.getPos();
         var d = dist(pos, des);
         if (d < range) {
@@ -489,39 +515,49 @@
           this.addGoJob(Math.min(50, d), thisjob);
           return false;
         }
-      },function(){
+      },function() {
         return {type:"DEST",value:obj};
       }];
     }
     
-    this.addGoJob = function(steps, parent){
+    this.addGoJob = function(steps, parent) {
       var funcs = actionMoveSteps(steps);
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.addTurnJob = function(degree, parent){
+    this.addTurnJob = function(degree, parent) {
       var funcs = actionTurn(degree);
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.addTakeJob = function(sugar, parent){
+    this.addTakeJob = function(sugar, parent) {
       var funcs = actionTake(sugar);
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.addDropJob = function(parent){
+    this.addDropJob = function(parent) {
       var funcs = actionDrop();
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.addTurnToJob = function(angle, parent){
+    this.addWaitJob = function(rounds, parent) {
+      var funcs = actionWait(rounds);
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
+    this.addTurnToJob = function(angle, parent) {
       var funcs = actionTurnTo(angle);
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.goToSugar = function(sugar, parent){
+    this.addCustomJob = function(f, parent) {
+      var funcs = actionCustom(f);
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
+    this.goToSugar = function(sugar, parent) {
       var parent = new Job("command", parent);
-      var funcs = cmdReachPos(sugar, 1, function(){
+      var funcs = cmdReachPos(sugar, 1, function() {
         API.callUserFunc("ZuckerErreicht", [sugar]);
       }, parent);
       parent.callback = funcs[0];
@@ -531,10 +567,10 @@
       this.addJob(parent);
     }
     
-    this.goToHome = function(parent){
+    this.goToHome = function(parent) {
       var parent = new Job("command", parent);
       var hill = Sim.hills[playerid];
-      var funcs = cmdReachPos(hill, 10, function(){
+      var funcs = cmdReachPos(hill, 10, function() {
         Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
         load = 0;
         API.callUserFunc("BauErreicht", [hill]);
@@ -546,7 +582,7 @@
       this.addJob(parent);
     }
     
-    this.update = function(){
+    this.update = function() {
       insertionPoint = jobs.length;
       API.setAnt(this);
       
@@ -580,7 +616,7 @@
   
   
   // JOB
-  function Job(type, parent, callback, info){
+  function Job(type, parent, callback, info) {
     this.type = type;
     this.parent = parent;
     this.callback = callback;
@@ -589,18 +625,18 @@
   
   
 // ALL MANAGER
-  var Sim = {
-      playground : undefined
-    , players : []
-    , hills : []
-    , sugars : []
-    , ants : []
+  var Simulation = function() {
+    this.playground = undefined
+    this.players = []
+    this.hills = []
+    this.sugars = []
+    this.ants = []
     
-    , playerCount:function(){
+    this.playerCount=function() {
       return Sim.players.length;
     }
     
-    , init:function(){
+    this.init=function() {
       
       var area = (1 + (API.ants.length * Optionen.SpielfeldVerhältnis)) * Optionen.SpielfeldGrundGröße;
       var width = Math.round(Math.sqrt(area * Optionen.SpielfeldVerhältnis));
@@ -613,13 +649,13 @@
       }
     }
     
-    , update:function(){
+    this.update=function() {
     
-      Sim.ants.forEach(function(ant){
+      Sim.ants.forEach(function(ant) {
         ant.update();
       });
       
-      Sim.hills.forEach(function(hill){
+      Sim.hills.forEach(function(hill) {
         hill.update();
       });
       
@@ -627,24 +663,26 @@
     }
   }
   
+  var Sim = new Simulation();
+  
   
   // OUTER WRAPPER, well, not that beautiful
 
-  var API = {
-      ants : []
+  var APIWrapper = function() {
+    this.ants = []
     
-    , staticPlayerId : undefined
-    , curAnt : undefined
-    , objStore : []
-    , keyStore : []
-    , objCounter : 0
+    this.staticPlayerId = undefined
+    this.curAnt = undefined
+    this.objStore = []
+    this.keyStore = []
+    this.objCounter = 0
     
-    , setAnt:function(ant){
+    this.setAnt=function(ant) {
       API.curAnt = ant;
       API.staticPlayerId = ant.getPlayerid();
     }
     
-    , close:function(){
+    this.close=function() {
       API.curAnt = undefined;
       API.staticPlayerId = undefined;
       API.keyStore = [];
@@ -652,7 +690,7 @@
       API.objCounter = 0;
     }
     
-    , callUserFunc:function(func, arg){
+    this.callUserFunc=function(func, arg) {
       func = Sim.players[API.curAnt.getPlayerid()].getKI()[func];
       if (arg == undefined)
         arg = [];
@@ -663,26 +701,28 @@
       func.apply(API.pushObj(API.curAnt), arg.map(API.pushObj));
     }
     
-    , pushObj:function(obj){
+    this.pushObj=function(obj) {
       var id = API.objCounter++;
       API.objStore.push(obj);
       return API.registerKey(id);
     }
     
-    , getObj:function(id){
+    this.getObj=function(id) {
       return API.objStore[API.keyStore[id]];
     }
     
-    , registerKey(index){
+    this.registerKey=function(index) {
       var key = Math.random() + "";
       API.keyStore[key] = index;
       return key;
     }
-  }  
+  }
+  
+  var API = new APIWrapper();
 
-  am.LadeAmeise = function(ant){
+  am.LadeAmeise = function(ant) {
     // verify ants here
-    if (API.ants.length < Optionen.MaximaleSpieler){
+    if (API.ants.length < Optionen.MaximaleSpieler) {
       API.ants.push(ant);
     }
   }
@@ -719,7 +759,7 @@
     set: function(name) { }
   });
   
-  var antProp = function(name, f){
+  var antProp = function(name, f) {
     Object.defineProperty(global, name, {
       get: function() {
         if (API.staticPlayerId === undefined)
@@ -737,7 +777,7 @@
   antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
   antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
   
-  global.GeheSchritte = function(number){
+  global.GeheSchritte = function(number) {
     if (API.staticPlayerId == undefined)
       return;
     if (number == undefined)
@@ -747,7 +787,7 @@
     API.curAnt.addGoJob(number);
   }
   
-  global.DreheWinkel = function(degree){
+  global.DreheWinkel = function(degree) {
     if (API.staticPlayerId == undefined)
       return;
     if (typeof degree !== "number")
@@ -755,7 +795,7 @@
     API.curAnt.addTurnJob(degree);
   }
   
-  global.Zufallszahl = function(a, b){
+  global.Zufallszahl = function(a, b) {
     if (b == undefined) {
       return Math.floor(Math.random()*a);
     } else {
@@ -763,7 +803,7 @@
     }
   }
   
-  global.GeheZuZiel = function(ziel){
+  global.GeheZuZiel = function(ziel) {
     if (API.staticPlayerId == undefined)
       return;
     var obj = API.getObj(ziel);
@@ -773,13 +813,13 @@
       API.curAnt.goToHome();
   }
   
-  global.GeheZuBau = function(){
+  global.GeheZuBau = function() {
     if (API.staticPlayerId == undefined)
       return;
     API.curAnt.goToHome();
   }
   
-  global.Nimm = function(obj){
+  global.Nimm = function(obj) {
     if (API.staticPlayerId == undefined)
       return;
     var obj = API.getObj(obj);
@@ -787,7 +827,7 @@
       API.curAnt.addTakeJob(obj);
   }
   
-  global.DreheZu = function(angle){
+  global.DreheZu = function(angle) {
     if (API.staticPlayerId == undefined)
       return;
     if (typeof angle !== "number")
@@ -795,13 +835,13 @@
     API.curAnt.addTurnToJob(angle);
   }
   
-  global.Stop = function(){
+  global.Stop = function() {
     if (API.staticPlayerId == undefined)
       return;
     API.curAnt.stop();
   }
   
-  global.RiecheNachZucker = function(){
+  global.RiecheNachZucker = function() {
     if (API.staticPlayerId == undefined)
       return;
     var sugar = closest(API.curAnt.getPos(), Sim.sugars, API.curAnt.getRange());
@@ -811,22 +851,34 @@
       return undefined;
   }
 
-  global.BestimmeEntfernung = function(a, b){
+  global.BestimmeEntfernung = function(a, b) {
     if (API.staticPlayerId == undefined)
       return;
     return dist(API.getObj(a).getPos(), API.getObj(b).getPos());
   }
   
-  global.BestimmeWinkel = function(a, b){
+  global.BestimmeWinkel = function(a, b) {
     if (API.staticPlayerId == undefined)
       return;
     return getDir(API.getObj(a).getPos(), API.getObj(b).getPos());    
   }
   
-  global.LasseZuckerFallen = function(){
+  global.LasseZuckerFallen = function() {
     if (API.staticPlayerId == undefined)
       return;
     API.curAnt.addDropJob();
+  }
+  
+  global.Warte = function(runden) {
+    if (API.staticPlayerId == undefined)
+      return;
+    API.curAnt.addWaitJob(runden);
+  }
+  
+  global.FühreAus = function(f) {
+    if (API.staticPlayerId == undefined)
+      return;
+    API.curAnt.addCustomJob(f);
   }
 
 

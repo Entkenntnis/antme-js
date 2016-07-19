@@ -16,7 +16,7 @@
     , HügelRadius : 40
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
-    , ZuckerGröße : 1000
+    , ZuckerGröße : 200
     , ZuckerVergrößerung : 0.2
     , NahrungMindestEntfernung : 200
     , NahrungMaximalEntfernung : 1500
@@ -31,6 +31,8 @@
     , AmeiseTragkraft : 5
     , PunkteProZucker : 5
     , ZuckerVerlangsamung : 0.75
+    , TicksProSekunde : 60
+    , MaximalÜbersprungeneFrames : 10
   }
   
   

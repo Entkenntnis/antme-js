@@ -50,11 +50,17 @@ Davidmeise.IstGeboren = function(){
 
 Davidmeise.Tick = function(){
   if (!Ziel) {
+    console.log("hi");
     var zucker = RiecheNachZucker();
     if (zucker) {
       GeheZuZiel(zucker);
       Nimm(zucker);
       GeheSchritte(100);
+      Warte(60);
+      /*FühreAus(function (){
+        if (ZuckerLast > 0)
+        GeheZuZiel(Bau);
+      });*/
       GeheZuZiel(Bau);
     }
   }
