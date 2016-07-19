@@ -32,6 +32,7 @@ Davidmeise.RandErreicht = function(){
 
 Davidmeise.SiehtZucker = function(zucker){
   //GeheZuZiel(zucker);
+  //Stop();
 }
 
 Davidmeise.ZuckerErreicht = function(zucker){
@@ -46,10 +47,11 @@ Davidmeise.BauErreicht = function(){
 
 Davidmeise.IstGeboren = function(){
   //GeheZuBau();
+  Merke("Nummer", 2)
 }
 
 Davidmeise.ApfelErreicht = function(apfel) {
-BringeApfelZuBau(apfel);
+  BringeApfelZuBau(apfel);
 }
 
 Davidmeise.Tick = function(){
@@ -69,11 +71,13 @@ Davidmeise.Tick = function(){
     var apfel = RiecheNachApfel();
     if (apfel && BrauchtNochTräger(apfel)) {
       GeheZuZiel(apfel);
+      Vergesse("Nummer");
     }
   }
   if (Untätig) {
     GeheSchritte(Zufallszahl(10, 30));
     DreheWinkel(Zufallszahl(-40, 40));
+    console.log(HatErinnerung("Nummer"));
   }
 }
         

@@ -11,17 +11,17 @@
     , Runden : 5000
     , SpielfeldVerhältnis : 4.0/3.0
     , SpielfeldGrundGröße : 550000
-    , HügelAbstand : 300
+    , HügelAbstand : 500
     , HügelRandAbstand : 200
     , HügelRadius : 40
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
     , ZuckerGröße : 200
     , ZuckerVergrößerung : 0.1
-    , NahrungMindestEntfernung : 200
-    , NahrungMaximalEntfernung : 1500
-    , NahrungAbstand : 100
-    , ZuckerWartezeit : 125
+    , NahrungMindestEntfernung : 300
+    , NahrungMaximalEntfernung : 700
+    , NahrungAbstand : 200
+    , ZuckerWartezeit : 150
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
     , AmeisenMaximum : 10
@@ -37,6 +37,7 @@
     , ÄpfelProSpieler : 1
     , AmeisenFürApfel : 4
     , MaximumAmeisenFürApfel : 20
+    , PunkteProApfel : 1000
   }
   
   
