@@ -17,14 +17,14 @@
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
     , ZuckerGröße : 200
-    , ZuckerVergrößerung : 0.15
+    , ZuckerVergrößerung : 0.1
     , NahrungMindestEntfernung : 200
     , NahrungMaximalEntfernung : 1500
     , NahrungAbstand : 100
     , ZuckerWartezeit : 125
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
-    , AmeisenMaximum : 30
+    , AmeisenMaximum : 10
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
     , AmeiseSichtweite : 700
@@ -33,6 +33,10 @@
     , ZuckerVerlangsamung : 0.75
     , TicksProSekunde : 60
     , MaximalÜbersprungeneFrames : 10
+    , ApfelWartezeit : 225
+    , ÄpfelProSpieler : 1
+    , AmeisenFürApfel : 4
+    , MaximumAmeisenFürApfel : 20
   }
   
   

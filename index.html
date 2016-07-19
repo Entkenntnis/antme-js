@@ -48,9 +48,13 @@ Davidmeise.IstGeboren = function(){
   //GeheZuBau();
 }
 
+Davidmeise.ApfelErreicht = function(apfel) {
+BringeApfelZuBau(apfel);
+}
+
 Davidmeise.Tick = function(){
   if (!Ziel) {
-    var zucker = RiecheNachZucker();
+    /*var zucker = RiecheNachZucker();
     if (zucker) {
       GeheZuZiel(zucker);
       Nimm(zucker);
@@ -61,6 +65,10 @@ Davidmeise.Tick = function(){
           Stop();
       });
       GeheZuZiel(Bau);
+    }*/
+    var apfel = RiecheNachApfel();
+    if (apfel && BrauchtNochTräger(apfel)) {
+      GeheZuZiel(apfel);
     }
   }
   if (Untätig) {
@@ -69,6 +77,11 @@ Davidmeise.Tick = function(){
   }
 }
         
+AntMe.LadeAmeise(Davidmeise);
+AntMe.LadeAmeise(Davidmeise);
+AntMe.LadeAmeise(Davidmeise);
+AntMe.LadeAmeise(Davidmeise);
+AntMe.LadeAmeise(Davidmeise);
 AntMe.LadeAmeise(Davidmeise);
 //AntMe.LadeAmeise({Name:"Demo-Meise"});
 

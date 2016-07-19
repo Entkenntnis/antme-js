@@ -9,7 +9,6 @@
       running : false
     , startTime : undefined
     , simulationFps : Optionen.TicksProSekunde
-    , cycles : 0
     , simStatus : undefined
     
     , init:function(){
@@ -20,27 +19,30 @@
       SimPulse.needsRedraw = true;
       SimPulse.running = true;
       SimPulse.fpsInterval = 1000.0 / SimPulse.simulationFps;
-      SimPulse.cycles = 0;
+      Sim.cycles = 0;
       Sim.init();
       SimPulse.startTime = Date.now();
       SimPulse.tick();
     }
     
     , tick:function(){
-      if (SimPulse.cycles >= Optionen.Runden) {
+      if (Sim.cycles >= Optionen.Runden) {
         SimPulse.end();
         return;
       }
       var elapsedTime = Date.now() - SimPulse.startTime;
       var targetCycle = elapsedTime / 1000 * SimPulse.simulationFps;
       var skippedFrames = 0;
-      while(SimPulse.cycles < targetCycle && skippedFrames < Optionen.MaximalÜbersprungeneFrames){
+      while(Sim.cycles < targetCycle && skippedFrames < Optionen.MaximalÜbersprungeneFrames){
         Sim.update();
-        var runState = Math.round(SimPulse.cycles / Optionen.Runden * 100);
+        var runState = Math.round(Sim.cycles / Optionen.Runden * 100);
         SimPulse.simStatus.innerHTML = "Fortschritt: " + runState + "%";
-        SimPulse.cycles++;
+        Sim.cycles++;
         skippedFrames++;
         vw.needsRedraw = true;
+      }
+      if (skippedFrames >= Optionen.MaximalÜbersprungeneFrames) {
+        SimPulse.startTime = Date.now() - (Sim.cycles / SimPulse.simulationFps * 1000);
       }
       if (SimPulse.running) {
         setTimeout(SimPulse.tick,2);

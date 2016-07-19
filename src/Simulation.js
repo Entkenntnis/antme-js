@@ -61,7 +61,7 @@
   
   var SUGAR = "Sugar";
   var HILL = "Hill";
-  
+  var APPLE = "Apple";
   
 
 
@@ -200,11 +200,17 @@
     
     // spawning
     var timeToNextSugar = Optionen.ZuckerWartezeit;
+    var timeToNextApple = Optionen.ApfelWartezeit
     this.update = function() {
       var maximalSugars = (Sim.playerCount() + 1) * Optionen.ZuckerProSpieler;
       if (timeToNextSugar-- <= 0 && Sim.sugars.length < maximalSugars) {
         timeToNextSugar = Optionen.ZuckerWartezeit;
         Sim.sugars.push(new Sugar(this.getGoodyPos()));
+      }
+      var maximalApples = (Sim.playerCount() + 1) * Optionen.ÄpfelProSpieler;
+      if (timeToNextApple-- <= 0 && Sim.apples.length < maximalApples) {
+        timeToNextApple = Optionen.ApfelWartezeit;
+        Sim.apples.push(new Apple(this.getGoodyPos()));
       }
       
       var toRemove = [];
@@ -217,6 +223,8 @@
         var index = Sim.sugars.indexOf(obj);
         Sim.sugars.splice(index, 1);
       });
+      
+      // TODO: remove apples
     }
   }
 
@@ -297,6 +305,95 @@
         return true;
       } else {
         return false;
+      }
+    }
+  }
+  
+    // APPLE
+  function Apple(_pos) {
+    Apple.counter = Apple.counter || 1;
+    var pos = _pos;
+    var key = Apple.counter++;
+    this.ants = [];
+    this.dx = 0;
+    this.dy = 0;
+    this.heading = 0;
+    var moving = false;
+    var pid = undefined;
+    updateGO();
+    
+    function updateGO() {
+      var GO = vw.appleStore.get(key);
+      var height = moving?5:0;
+      GO.position.copy(toViewPos(pos, height));
+    }
+    
+    this.getPos = function() {
+      return pos;
+    }
+    
+    this.addAnt = function(ant) {
+      if (this.needHelp(ant)) {
+        this.ants.push(ant);
+      }
+    }
+    
+    this.needHelp = function(ant) {
+      if (pid === undefined) {
+        return true;
+      } else if (ant.getPlayerid() === pid && this.ants.length < Optionen.MaximumAmeisenFürApfel) {
+        return true;
+      }
+      return false;
+    }
+    
+    this.update = function() {
+      if (pid !== undefined) {
+        this.heading = getDir(this.getPos(), Sim.hills[pid].getPos());
+        // Geschwindigkeit zwischen 0.2 und 1
+        var speed = 0.2 + 0.8 * (this.ants.length / Optionen.MaximumAmeisenFürApfel);
+        this.dx =  speed*Math.cos(this.heading/180*Math.PI);
+        this.dy = speed*Math.sin(this.heading/180*Math.PI);
+        pos.x += this.dx;
+        pos.y += this.dy;
+        updateGO();
+        return;
+      }
+      // check parties
+      var stats = {};
+      var parties = [];
+      this.ants.forEach(function(ant){
+        var id = ant.getPlayerid();
+        if (id in stats) {
+          stats[id].push(ant);
+        } else {
+          stats[id] = [ant];
+          parties.push(id);
+        }
+      });
+      var vals = parties.map(function(e){
+        return {id:e, len:stats[e].length};
+      });
+      var bestid = undefined;
+      var bestlen = -1;
+      vals.forEach(function(e){
+        if (bestlen == e.len)
+          bestlen = -1;
+        else if (bestlen < e.len) {
+          bestlen = e.len
+          bestid = e.id;
+        }
+      });
+      if (bestlen >= Optionen.AmeisenFürApfel) {
+        var toKeep = [];
+        this.ants.forEach(function(a){
+          if (a.getPlayerid() == bestid) {
+            toKeep.push(a);
+          }
+        });
+        this.ants = toKeep;
+        moving = true;
+        pid = bestid;
       }
     }
   }
@@ -500,6 +597,31 @@
       }];
     }
     
+    function actionBringAppleHome(_apple) {
+      var apple = _apple;
+      var setup = false;
+      return [function() {
+        var index = Sim.apples.indexOf(apple);
+        if (index < 0) {
+          return true;
+        }
+        if (!setup) {
+          setup = true;
+          apple.addAnt(this);
+          return false;
+        }
+        if (apple.ants.indexOf(this) < 0) {
+          this.stop();
+          return true;
+        }
+        heading = apple.heading;
+        this.setPos({x:pos.x + apple.dx, y:pos.y + apple.dy});
+        return false;
+      }, function() {
+        return {type:"APPLE",value:apple};
+      }];
+    }
+    
     function cmdReachPos(obj, range, callback, thisjob) {
       return [function() {
         var des = obj.getPos();
@@ -550,36 +672,45 @@
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
+    this.addAppleJob = function(apple, parent) {
+      var funcs = actionBringAppleHome(apple);
+      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
+    }
+    
     this.addCustomJob = function(f, parent) {
       var funcs = actionCustom(f);
       this.addJob(new Job("action", parent, funcs[0], funcs[1]));
     }
     
-    this.goToSugar = function(sugar, parent) {
+    var gotoHelper = function(obj, snap, f) {
       var parent = new Job("command", parent);
-      var funcs = cmdReachPos(sugar, 1, function() {
-        API.callUserFunc("ZuckerErreicht", [sugar]);
-      }, parent);
+      var funcs = cmdReachPos(obj, snap, f, parent);
       parent.callback = funcs[0];
       parent.info = funcs[1];
       jobs.splice(0, insertionPoint);
       insertionPoint = 0;
       this.addJob(parent);
+    }.bind(this);
+    
+    this.goToSugar = function(sugar, parent) {
+      gotoHelper(sugar, 1, function() {
+        API.callUserFunc("ZuckerErreicht", [sugar]);
+      });
+    }
+    
+    this.goToApple = function(apple, parent) {
+      gotoHelper(apple, 10, function() {
+        API.callUserFunc("ApfelErreicht", [apple]);
+      })
     }
     
     this.goToHome = function(parent) {
-      var parent = new Job("command", parent);
       var hill = Sim.hills[playerid];
-      var funcs = cmdReachPos(hill, 10, function() {
+      gotoHelper(hill, 10, function() {
         Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
         load = 0;
         API.callUserFunc("BauErreicht", [hill]);
-      }, parent);
-      parent.callback = funcs[0];
-      parent.info = funcs[1];
-      jobs.splice(0, insertionPoint);
-      insertionPoint = 0;
-      this.addJob(parent);
+      });
     }
     
     this.update = function() {
@@ -626,11 +757,13 @@
   
 // ALL MANAGER
   var Simulation = function() {
+    this.cycles = 0;
     this.playground = undefined
     this.players = []
     this.hills = []
     this.sugars = []
     this.ants = []
+    this.apples = []
     
     this.playerCount=function() {
       return Sim.players.length;
@@ -650,7 +783,10 @@
     }
     
     this.update=function() {
-    
+      Sim.apples.forEach(function(apple){
+        apple.update();
+      })
+      
       Sim.ants.forEach(function(ant) {
         ant.update();
       });
@@ -729,6 +865,7 @@
   
   global.ZUCKER = SUGAR;
   global.HÜGEL = HILL;
+  global.APFEL = APPLE;
 
   Object.defineProperty(global, 'Ziel', {
     get: function() {
@@ -751,6 +888,8 @@
             destination = SUGAR;
           } else if (info.value.constructor.name == "Hill") {
             destination = HILL;
+          } else if (info.value.constructor.name == "Apple") {
+            destination = APPLE;
           }
         }
       }
@@ -811,6 +950,8 @@
       API.curAnt.goToSugar(obj);
     if (obj.constructor.name == "Hill")
       API.curAnt.goToHome();
+    if (obj.constructor.name == "Apple")
+      API.curAnt.goToApple(obj);
   }
   
   global.GeheZuBau = function() {
@@ -850,6 +991,16 @@
     else
       return undefined;
   }
+  
+  global.RiecheNachApfel = function() {
+    if (API.staticPlayerId == undefined)
+      return;
+    var apple = closest(API.curAnt.getPos(), Sim.apples, API.curAnt.getRange());
+    if (apple)
+      return API.pushObj(apple);
+    else
+      return undefined;
+  }
 
   global.BestimmeEntfernung = function(a, b) {
     if (API.staticPlayerId == undefined)
@@ -879,6 +1030,21 @@
     if (API.staticPlayerId == undefined)
       return;
     API.curAnt.addCustomJob(f);
+  }
+  
+  global.BringeApfelZuBau = function(obj) {
+    if (API.staticPlayerId == undefined)
+      return;
+    var apple = API.getObj(obj);
+    API.curAnt.addAppleJob(apple);
+    API.curAnt.goToHome();
+  }
+  
+  global.BrauchtNochTräger = function(obj) {
+    if (API.staticPlayerId == undefined)
+      return;
+    var apple = API.getObj(obj);
+    return apple.needHelp(API.curAnt);
   }
 
 

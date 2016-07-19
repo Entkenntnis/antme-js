@@ -183,7 +183,7 @@ var AntMe = {};
       objectLoader.load("models/apple.json", function ( obj ) {
         obj.children[0].children[0].material.color.setHex(0x00cc00);
         obj.children[0].children[1].material.color.setHex(0x66aa00);
-        obj.scale.set(2.6, 2.6, 2.6);
+        obj.scale.set(2, 2, 2);
         this.apple0 = obj;
       }.bind(this));
       objectLoader.load("models/bug.json", function ( obj ) {
