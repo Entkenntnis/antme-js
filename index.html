@@ -57,10 +57,12 @@ Davidmeise.Tick = function(){
       Nimm(zucker);
       GeheSchritte(100);
       Warte(60);
-      /*FühreAus(function (){
-        if (ZuckerLast > 0)
-        GeheZuZiel(Bau);
-      });*/
+      FühreAus(function (){
+        if (ZuckerLast > 3)
+          GeheZuZiel(Bau);
+        else
+          Stop();
+      });
       GeheZuZiel(Bau);
     }
   }

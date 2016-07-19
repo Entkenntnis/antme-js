@@ -16,7 +16,7 @@
     , HügelRadius : 40
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
-    , ZuckerGröße : 200
+    , ZuckerGröße : 6
     , ZuckerVergrößerung : 0.2
     , NahrungMindestEntfernung : 200
     , NahrungMaximalEntfernung : 1500
