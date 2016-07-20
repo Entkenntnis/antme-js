@@ -154,16 +154,29 @@
     }
     
     this.getHillPos = function() {
-      var pos;
+      var topW = width - Optionen.EckenAbstand*2;
+      var leftH = height - Optionen.EckenAbstand * 2;     
+      var pos = {};
       var limit = 100;
-      while(limit > 0) {
-        pos = this.randomPos();
-        if (!this.isInBound(pos, Optionen.HügelRandAbstand)) {
-          continue;
+      while(limit-- > 0) {
+        pos.x = Math.random()*(topW+leftH);
+        pos.y = Math.random()*Optionen.HügelStreifenBreite * 2;
+        if (pos.x < topW) {
+          if (pos.y >= Optionen.HügelStreifenBreite) {
+            pos.y += (height - Optionen.HügelStreifenBreite*2 - Optionen.HügelRandAbstand*2);
+          } 
+          pos.x += Optionen.EckenAbstand;
+          pos.y += Optionen.HügelRandAbstand;
+        } else {
+          var t = pos.y;
+          pos.y = pos.x - topW;
+          pos.x = t;
+          if (pos.x >= Optionen.HügelStreifenBreite) {
+            pos.x += (width - Optionen.HügelStreifenBreite * 2 - Optionen.HügelRandAbstand * 2);
+          }
+          pos.x += Optionen.HügelRandAbstand;
+          pos.y += Optionen.EckenAbstand;
         }
-        /*if (this.isInBound(pos, Math.min(height, width)*0.2)) {
-          continue;
-        }*/
         var isGood = true;
         for(var i = 0; i < Sim.hills.length; i++) {
           if (dist(Sim.hills[i].getPos(), pos) < Optionen.HügelAbstand) {
@@ -177,11 +190,27 @@
     }
     
     this.getGoodyPos = function() {
-      var pos;
-      var limit = 100;
-      while (limit > 0) {
-        pos = this.randomPos();
-        if (!this.isInBound(pos, Math.max(100, Math.min(height, width)*0.1)))
+      var pos = {};
+      var limit = 500;
+      while (limit-- > 0) {
+        var sumx = 0;
+        var sumy = 0;
+        Sim.hills.forEach(function (h) {
+          sumx += h.getPos().x;
+          sumy += h.getPos().y;
+        })
+        sumx /= Sim.hills.length;
+        sumy /= Sim.hills.length;
+        var wplus = Math.abs(sumx - width / 2);
+        var hplus = Math.abs(sumy - height / 2);
+        var wper = Math.random() * 2 - 1;
+        var hper = Math.random() * 2 - 1;
+        wper = Math.pow(Math.abs(wper), Optionen.NahrungsZentrierung) * Math.sign(wper);
+        hper = Math.pow(Math.abs(hper), Optionen.NahrungsZentrierung) * Math.sign(hper);
+        pos.x = (width + wplus) * wper + sumx;
+        pos.y = (height + hplus) * hper + sumy;
+        
+        if (!this.isInBound(pos, 10))
           continue;
         var toNear = false;
         var atLeastNear = false;
@@ -208,7 +237,7 @@
         if (toNear) continue;
         return pos;
       }
-      return pos;
+      return undefined;
     }
     
     // spawning

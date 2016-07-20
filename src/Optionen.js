@@ -13,14 +13,17 @@
     , SpielfeldGrundGröße : 550000
     , HügelAbstand : 500
     , HügelRandAbstand : 200
+    , HügelStreifenBreite : 100
+    , EckenAbstand : 300
     , HügelRadius : 40
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
     , ZuckerGröße : 200
     , ZuckerVergrößerung : 0.1
-    , NahrungMindestEntfernung : 300
-    , NahrungMaximalEntfernung : 700
+    , NahrungMindestEntfernung : 200
+    , NahrungMaximalEntfernung : 50000
     , NahrungAbstand : 200
+    , NahrungsZentrierung : 2
     , ZuckerWartezeit : 150
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
