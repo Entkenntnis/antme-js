@@ -161,9 +161,9 @@
         if (!this.isInBound(pos, Optionen.HügelRandAbstand)) {
           continue;
         }
-        if (this.isInBound(pos, Math.min(height, width)*0.2)) {
+        /*if (this.isInBound(pos, Math.min(height, width)*0.2)) {
           continue;
-        }
+        }*/
         var isGood = true;
         for(var i = 0; i < Sim.hills.length; i++) {
           if (dist(Sim.hills[i].getPos(), pos) < Optionen.HügelAbstand) {
@@ -559,6 +559,7 @@
     
     this.stop = function() {
       jobs = [];
+      insertionPoint = 0;
     }
     
     function reachedHome() {
@@ -1009,7 +1010,7 @@
   antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
   antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
   antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
-  antProp('MaximaleReichweite', ()=>{return API.curAnt.getMaxDistance();});
+  antProp('Reichweite', ()=>{return API.curAnt.getMaxDistance();});
   antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
   antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
   antProp('GetragenerApfel', ()=>{
@@ -1084,10 +1085,10 @@
     API.curAnt.addTurnToJob(angle);
   }
   
-  global.Stop = function() {
+  global.Stopp = function() {
     if (API.staticPlayerId == undefined)
       return;
-    API.curAnt.stop();
+    FühreAus(()=>{API.curAnt.stop()});
   }
   
   global.RiecheNachZucker = function() {
@@ -1198,7 +1199,8 @@
     }    
   }
 
-
+  global.Sim = Sim;
+  global.VW = vw;
 
 
 

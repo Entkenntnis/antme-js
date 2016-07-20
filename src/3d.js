@@ -168,12 +168,13 @@ var AntMe = {};
         obj.children[0].children.forEach(function(o){
           o.material = new THREE.MeshLambertMaterial({color:0x000000});
         });
-        var face = textureLoader.load("assets/face.jpg");
+        /*var face = textureLoader.load("assets/face.jpg");
         obj.children[0].children[10].material = new THREE.MeshLambertMaterial({
-          color:0xfffff0,
-          map:face
+          color:0xffffff
+          , map:face
         });
-        console.log(obj.children[0].children[10].rotation);
+        obj.children[0].children[10].rotation.set(-Math.PI/2, -Math.PI/2, 0);
+        obj.children[0].children[10].position.set(2.4, -0.63, 1.68);*/
         obj.scale.set(1.6,1.6,1.6);
         this.ant0 = obj;
       }.bind(this));

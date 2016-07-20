@@ -43,6 +43,7 @@ Davidmeise.ZuckerErreicht = function(zucker){
 Davidmeise.BauErreicht = function(){
   DreheWinkel(180);
   GeheSchritte();
+  Vergesse("Müde");
 }
 
 Davidmeise.IstGeboren = function(){
@@ -55,7 +56,7 @@ Davidmeise.ApfelErreicht = function(apfel) {
 }
 
 Davidmeise.Tick = function(){
-  if (!Ziel) {
+  if (!Ziel &&!HatErinnerung("Müde")) {
     /*var zucker = RiecheNachZucker();
     if (zucker) {
       GeheZuZiel(zucker);
@@ -74,20 +75,29 @@ Davidmeise.Tick = function(){
       Vergesse("Nummer");
     }
   }
+  if (Reichweite - ZurückgelegteStrecke < 1000 && !HatErinnerung("Müde")) {
+    console.log("tired")
+    GeheZuBau();
+    Merke("Müde");
+  }
+  if (BestimmeEntfernung(this, Bau) > 500) {
+    GeheZuBau();
+  }
   if (Untätig) {
     GeheSchritte(Zufallszahl(10, 30));
     DreheWinkel(Zufallszahl(-40, 40));
+    Stopp();
     //console.log(HatErinnerung("Nummer"));
   }
 }
         
+/*AntMe.LadeAmeise(Davidmeise);
 AntMe.LadeAmeise(Davidmeise);
 AntMe.LadeAmeise(Davidmeise);
 AntMe.LadeAmeise(Davidmeise);
 AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-//AntMe.LadeAmeise({Name:"Demo-Meise"});
+AntMe.LadeAmeise(Davidmeise);*/
+AntMe.LadeAmeise({Name:"Demo-Meise"});
 
 
 

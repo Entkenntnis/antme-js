@@ -27,7 +27,7 @@
     , AmeisenMaximum : 100
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
-    , AmeiseSichtweite : 700
+    , AmeiseSichtweite : 70
     , AmeiseTragkraft : 5
     , PunkteProZucker : 5
     , ZuckerVerlangsamung : 0.75
