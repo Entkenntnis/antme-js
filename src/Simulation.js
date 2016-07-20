@@ -244,6 +244,14 @@
         }
         return false;
       });
+      
+      removeIf(Sim.ants, function(ant) {
+        if (ant.getLap() > ant.getMaxDistance()) {
+          ant.die();
+          return true;
+        }
+        return false;
+      })
     }
   }
 
@@ -254,6 +262,7 @@
     var pos = _pos;
     var playerid = _playerid;
     var key = Hill.counter++;
+    var energy = Optionen.AnfangsEnergie;
     vw.setHillFlagColor(vw.hillStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
@@ -269,6 +278,14 @@
       return playerid;
     }
     
+    this.getEnergy = function() {
+      return energy;
+    }
+    
+    this.addEnergy = function(val) {
+      energy += val;
+    }
+    
     var timeToNextAnt = Optionen.AmeiseWartezeit;
     this.update = function() {
       var ownAnts = 0;
@@ -276,8 +293,10 @@
         if (ant.getPlayerid() == playerid)
           ownAnts++;
       });
-      if (timeToNextAnt-- <= 0 && ownAnts < Optionen.AmeisenMaximum) {
+      if (timeToNextAnt-- <= 0 && ownAnts < Optionen.AmeisenMaximum
+            && energy >= Optionen.EnergieFürAmeise) {
         timeToNextAnt = Optionen.AmeiseWartezeit;
+        energy -= Optionen.EnergieFürAmeise;
         var antPos = {x:pos.x,y:pos.y};
         var angle = Math.random()*Math.PI*2;
         var radius = Optionen.HügelRadius + (Math.random()*10 - 5);
@@ -323,6 +342,7 @@
         updateGO();
         return true;
       } else {
+        vw.sugarStore.remove(key);
         return false;
       }
     }
@@ -373,6 +393,7 @@
     this.reachHome = function(id) {
       vw.appleStore.remove(key);
       Sim.players[id].addPoints(Optionen.PunkteProApfel);
+      Sim.hills[id].addEnergy(Optionen.EnergieProApfel);
     }
     
     this.update = function() {
@@ -453,6 +474,8 @@
     var load = 0;
     var jobs = [];
     var insertionPoint = 0;
+    var maxDistance = Optionen.AmeisenReichweite;
+    var lap = 0;
     vw.setAntBodyColor(vw.antStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
@@ -499,7 +522,26 @@
       return key;
     }
     
+    this.getMaxSpeed = function() {
+      return speed;
+    }
+    
+    this.getMaxDistance = function() {
+      return maxDistance;
+    }
+    
+    this.getLap = function() {
+      return lap;
+    }
+    
+    this.die = function() {
+      vw.antStore.remove(key);
+      if (vw.sugarBoxStore.has(key))
+        vw.sugarBoxStore.remove(key);
+    }
+    
     this.setPos = function(newpos) {
+      lap += dist(pos, newpos);
       pos.x = newpos.x;
       pos.y = newpos.y;
       updateGO();
@@ -517,6 +559,13 @@
     
     this.stop = function() {
       jobs = [];
+    }
+    
+    function reachedHome() {
+      Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
+      Sim.hills[playerid].addEnergy(load*Optionen.EnergieProZucker);
+      load = 0;
+      lap = 0;
     }
     
     function actionMoveSteps(_steps) {
@@ -752,8 +801,7 @@
     this.goToHome = function(parent) {
       var hill = Sim.hills[playerid];
       gotoHelper(hill, 10, function() {
-        Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
-        load = 0;
+        reachedHome();
         API.callUserFunc("BauErreicht", [hill]);
       });
     }
@@ -960,6 +1008,9 @@
   antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
   antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
   antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
+  antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
+  antProp('MaximaleReichweite', ()=>{return API.curAnt.getMaxDistance();});
+  antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
   antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
   antProp('GetragenerApfel', ()=>{
     var jobs = API.curAnt.getJobs();

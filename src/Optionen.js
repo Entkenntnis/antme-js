@@ -8,7 +8,7 @@
   
  var Optionen = {
       MaximaleSpieler : 8
-    , Runden : 5000
+    , Runden : 10000
     , SpielfeldVerhältnis : 4.0/3.0
     , SpielfeldGrundGröße : 550000
     , HügelAbstand : 500
@@ -24,7 +24,7 @@
     , ZuckerWartezeit : 150
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
-    , AmeisenMaximum : 10
+    , AmeisenMaximum : 100
     , AmeiseGeschwindigkeit : 4
     , AmeiseDrehgeschwindigkeit : 8
     , AmeiseSichtweite : 700
@@ -38,6 +38,11 @@
     , AmeisenFürApfel : 4
     , MaximumAmeisenFürApfel : 20
     , PunkteProApfel : 1000
+    , AnfangsEnergie : 4000
+    , EnergieFürAmeise : 200
+    , EnergieProApfel : 2000
+    , EnergieProZucker : 10
+    , AmeisenReichweite : 3000
   }
   
   
