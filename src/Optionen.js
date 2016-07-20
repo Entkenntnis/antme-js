@@ -8,7 +8,7 @@
   
  var Optionen = {
       MaximaleSpieler : 8
-    , Runden : 10000
+    , Runden : 5000
     , SpielfeldVerhältnis : 4.0/3.0
     , SpielfeldGrundGröße : 550000
     , HügelAbstand : 500

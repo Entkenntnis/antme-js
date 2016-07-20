@@ -97,9 +97,13 @@ var AntMe = {};
     }
     this.remove = function(id){
       var obj = store[prefix + id];
-      obj.visible = false;
-      delete store[prefix + id];
-      ready.push(obj);
+      if (obj !== undefined) {
+        obj.visible = false;
+        delete store[prefix + id];
+        ready.push(obj);
+      } else {
+        console.log(id);
+      }
     }
   }
 

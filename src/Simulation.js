@@ -237,7 +237,7 @@
         if (toNear) continue;
         return pos;
       }
-      return undefined;
+      return this.randomPos();
     }
     
     // spawning
@@ -564,6 +564,9 @@
     }
     
     this.die = function() {
+      API.setAnt(this);
+      API.callUserFunc("IstGestorben");
+      API.close();
       vw.antStore.remove(key);
       if (vw.sugarBoxStore.has(key))
         vw.sugarBoxStore.remove(key);
@@ -755,7 +758,10 @@
           return true;
         } else {
           var angle = getDir(pos, des);
-          var rotation = getRotation(heading, angle) + Math.floor(Math.random()*20-10);
+          var rotation = getRotation(heading, angle);
+          if (d > 50) {
+            rotation += Math.floor(Math.random()*10-5);
+          }
           if (rotation != 0)
             this.addTurnJob(rotation, thisjob);
           this.addGoJob(Math.min(50, d), thisjob);
@@ -856,6 +862,13 @@
         var sugar = closest(pos, Sim.sugars, range);
         if (sugar != undefined) {
           API.callUserFunc("SiehtZucker", [sugar]);
+        }
+      }
+      
+      if (global.Ziel === undefined) {
+        var apple = closest(pos, Sim.apples, range);
+        if (apple != undefined) {
+          API.callUserFunc("SiehtApfel", [apple]);
         }
       }
       
