@@ -109,7 +109,6 @@
     var details = document.createElement("DIV");
     details.style.fontWeight = "normal";
     details.style.color = "black";
-    details.innerHTML = "(Zucker: 10 / Äpfel: 1 / Ameisen: 10)"
     details.style.marginLeft = "20px";
     para.appendChild(details);
     document.getElementById("hud").appendChild(para);
@@ -118,6 +117,7 @@
     var ants = 0;
     var collectedApples = 0;
     var deadants = 0;
+    updateDetails();
     
     function updateDetails(){
       details.innerHTML = "(Ameisen: " + ants + " / Tote: " + deadants + 
@@ -961,7 +961,7 @@
     this.goToPos = function(pos, parent) {
       gotoHelper(pos, 1, function () {
         API.callUserFunc("PositionErreicht");
-      }
+      });
     }
     
     this.goToHome = function(parent) {
