@@ -202,6 +202,7 @@ var AntMe = {};
           o.material.color.setHex(0x000000);
           o.material.specular.setHex(0x00dddd);
         });
+        obj.scale.set(1.3,1.3,1.3);
         this.bug0 = obj;
       }.bind(this));
       objectLoader.load("models/sugar.json", function ( obj ) {

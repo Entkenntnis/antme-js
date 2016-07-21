@@ -59,6 +59,13 @@
     return rotation;
   }
   
+  function moveDir(pos, heading, dist) {
+    return {
+      x:pos.x + dist*Math.cos(heading/180*Math.PI),
+      y:pos.y + dist*Math.sin(heading/180*Math.PI)
+    };
+  }
+  
   function removeIf(arr, f) {
     var i = arr.length;
     while (i--) {
@@ -84,7 +91,10 @@
     var points = 0;
     
     var para = document.createElement("DIV");
-    para.innerHTML = KI.Name;
+    var nameE =document.createElement("DIV");
+    nameE.innerHTML = KI.Name;
+    nameE.style.minWidth = "180px";
+    para.appendChild(nameE);
     para.style.display = "flex";
     para.style.fontWeight = "bold";
     var hex = Optionen.SpielerFarben[id];
@@ -94,10 +104,46 @@
     para.style.color = "#" + hexS;
     var pointsE = document.createElement("DIV");
     pointsE.id = "player" + id;
-    pointsE.style.marginLeft = "50px";
+    pointsE.style.marginLeft = "10px";
     para.appendChild(pointsE);
+    var details = document.createElement("DIV");
+    details.style.fontWeight = "normal";
+    details.style.color = "black";
+    details.innerHTML = "(Zucker: 10 / Äpfel: 1 / Ameisen: 10)"
+    details.style.marginLeft = "20px";
+    para.appendChild(details);
     document.getElementById("hud").appendChild(para);
     
+    var collectedSugar = 0;
+    var ants = 0;
+    var collectedApples = 0;
+    var deadants = 0;
+    
+    function updateDetails(){
+      details.innerHTML = "(Ameisen: " + ants + " / Tote: " + deadants + 
+        " / Zucker: " + collectedSugar + " / Äpfel: " + collectedApples + ")";
+    }
+    
+    this.addSugar = function(amount) {
+      collectedSugar += amount;
+      updateDetails();
+    }
+    
+    this.addApple = function() {
+      collectedApples++;
+      updateDetails();
+    }
+    
+    this.addAnt = function(){
+      ants++;
+      updateDetails();
+    }
+    
+    this.subAnt = function(){
+      ants--;
+      deadants++;
+      updateDetails();
+    }
     
     this.getId = function() {
       return id;
@@ -242,7 +288,8 @@
     
     // spawning
     var timeToNextSugar = Optionen.ZuckerWartezeit;
-    var timeToNextApple = Optionen.ApfelWartezeit
+    var timeToNextApple = Optionen.ApfelWartezeit;
+    var timeToNextBug = Optionen.WanzenWartezeit;
     this.update = function() {
       var maximalSugars = (Sim.playerCount() + 1) * Optionen.ZuckerProSpieler;
       if (timeToNextSugar-- <= 0 && Sim.sugars.length < maximalSugars) {
@@ -253,6 +300,11 @@
       if (timeToNextApple-- <= 0 && Sim.apples.length < maximalApples) {
         timeToNextApple = Optionen.ApfelWartezeit;
         Sim.apples.push(new Apple(this.getGoodyPos()));
+      }
+      var maximalBugs = (Sim.playerCount() + 1) * Optionen.WanzenProSpieler;
+      if (timeToNextBug-- <= 0 && Sim.bugs.length < maximalBugs) {
+        timeToNextBug = Optionen.WanzenWartezeit;
+        Sim.bugs.push(new Bug(this.randomPos()));
       }
       
       removeIf(Sim.sugars, function(sugar){
@@ -275,7 +327,7 @@
       });
       
       removeIf(Sim.ants, function(ant) {
-        if (ant.getLap() > ant.getMaxDistance()) {
+        if (ant.getLap() > ant.getMaxDistance() || ant.getEnergy() <= 0) {
           ant.die();
           return true;
         }
@@ -333,6 +385,7 @@
         antPos.y += Math.sin(angle)*radius;
         var newAnt = new Ant(antPos, playerid)
         Sim.ants.push(newAnt);
+        Sim.players[playerid].addAnt();
         API.setAnt(newAnt);
         API.callUserFunc("IstGeboren");
         API.close();
@@ -371,7 +424,8 @@
         updateGO();
         return true;
       } else {
-        vw.sugarStore.remove(key);
+        if (vw.sugarStore.has(key))
+          vw.sugarStore.remove(key);
         return false;
       }
     }
@@ -423,6 +477,7 @@
       vw.appleStore.remove(key);
       Sim.players[id].addPoints(Optionen.PunkteProApfel);
       Sim.hills[id].addEnergy(Optionen.EnergieProApfel);
+      Sim.players[id].addApple();
     }
     
     this.update = function() {
@@ -439,6 +494,8 @@
       }
       // remove inactive ants
       removeIf(this.ants, function(ant){
+        if (Sim.ants.indexOf(ant) < 0)
+          return true;
         var jobs = ant.getJobs();
         if (jobs !== undefined) {
           var curJob = jobs[jobs.length - 1];
@@ -489,6 +546,57 @@
     }
   }
   
+    // BUG
+  function Bug(_pos) {
+    Bug.Counter = Bug.Counter || 1;
+    var key = Bug.Counter++;
+    var heading = Math.floor(Math.random()*360);
+    var pos = _pos;
+    var togo = 0;
+    var torotate = 0;
+    var towait = 0;
+    updateGO();
+    
+    function updateGO() {
+      vw.bugStore.get(key).position.copy(toViewPos(pos));
+      vw.bugStore.get(key).rotation.y = -heading / 180 * Math.PI + Math.PI;
+    }
+    
+    this.update = function() {
+      var ant = closest(pos, Sim.ants, Optionen.WanzenKampfweite);
+      if (ant !== undefined) {
+        ant.subEnergy(Optionen.WanzenAngriff, this);
+      }
+      if (torotate != 0) {
+        heading += Math.sign(torotate) * Optionen.WanzeDrehgeschwindigkeit;
+        torotate -= Math.sign(torotate);
+      } else if (togo > 0) {
+        var newpos = moveDir(pos, heading, Optionen.WanzeGeschwindigkeit);
+        if (!Sim.playground.isInBound(newpos, 10)) {
+          torotate = Math.round(180 / Optionen.WanzeDrehgeschwindigkeit);
+          togo = 0;
+        } else {
+          pos = newpos;
+        }
+        togo--;
+      } else if (towait != 0){
+        towait--;
+      } else {
+        towait = 30;
+        torotate = Math.floor(Math.random()*40-20);
+        togo = 35
+        ant = closest(pos, Sim.ants, Optionen.WanzeSichtweite);
+        if (ant!= undefined) {
+          var dir = getDir(pos, ant.getPos());
+          var rot = getRotation(heading, dir);
+          torotate = Math.round(rot/Optionen.WanzeDrehgeschwindigkeit);
+          console.log(torotate);
+        }
+      }
+      updateGO();
+    }
+  }
+  
     // ANT
   function Ant(_pos, _playerid) {
     Ant.counter = Ant.counter || 1;
@@ -505,6 +613,8 @@
     var insertionPoint = 0;
     var maxDistance = Optionen.AmeisenReichweite;
     var lap = 0;
+    var maxEnergy = Optionen.AmeisenEnergie;
+    var energy = maxEnergy;
     vw.setAntBodyColor(vw.antStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
@@ -563,6 +673,21 @@
       return lap;
     }
     
+    this.getEnergy = function() {
+      return energy;
+    }
+    
+    this.subEnergy = function(val, obj) {
+      energy -= val;
+      API.setAnt(this);
+      API.callUserFunc("WirdAngegriffen", [obj]);
+      API.close();
+    }
+    
+    this.getMaxEnergy = function() {
+      return maxEnergy;
+    }
+    
     this.die = function() {
       API.setAnt(this);
       API.callUserFunc("IstGestorben");
@@ -570,6 +695,7 @@
       vw.antStore.remove(key);
       if (vw.sugarBoxStore.has(key))
         vw.sugarBoxStore.remove(key);
+      Sim.players[playerid].subAnt();
     }
     
     this.setPos = function(newpos) {
@@ -597,8 +723,10 @@
     function reachedHome() {
       Sim.players[playerid].addPoints(load*Optionen.PunkteProZucker);
       Sim.hills[playerid].addEnergy(load*Optionen.EnergieProZucker);
+      Sim.players[playerid].addSugar(load);
       load = 0;
       lap = 0;
+      energy = maxEnergy;
     }
     
     function actionMoveSteps(_steps) {
@@ -618,9 +746,7 @@
         }
         var oldx = pos.x;
         var oldy = pos.y;
-        var newx = pos.x + toMove*Math.cos(heading/180*Math.PI);
-        var newy = pos.y + toMove*Math.sin(heading/180*Math.PI);
-        var newpos = {x:newx,y:newy};
+        var newpos = moveDir(pos, heading, toMove);
         if (Sim.playground.isInBound(newpos, 2)) {
           this.setPos(newpos);
         } else {
@@ -759,9 +885,7 @@
         } else {
           var angle = getDir(pos, des);
           var rotation = getRotation(heading, angle);
-          if (d > 50) {
-            rotation += Math.floor(Math.random()*10-5);
-          }
+          rotation += Math.floor(Math.random()*10-5);
           if (rotation != 0)
             this.addTurnJob(rotation, thisjob);
           this.addGoJob(Math.min(50, d), thisjob);
@@ -834,6 +958,12 @@
       })
     }
     
+    this.goToPos = function(pos, parent) {
+      gotoHelper(pos, 1, function () {
+        API.callUserFunc("PositionErreicht");
+      }
+    }
+    
     this.goToHome = function(parent) {
       var hill = Sim.hills[playerid];
       gotoHelper(hill, 10, function() {
@@ -890,6 +1020,14 @@
     this.info = info;
   }
   
+  // Position
+  function Position(_pos) {
+    var pos = _pos;
+    this.getPos = function() {
+      return pos;
+    }
+  }
+  
   
 // ALL MANAGER
   var Simulation = function() {
@@ -900,6 +1038,7 @@
     this.sugars = []
     this.ants = []
     this.apples = []
+    this.bugs = []
     this.memories = {}
     
     this.playerCount=function() {
@@ -922,6 +1061,10 @@
     this.update=function() {
       Sim.apples.forEach(function(apple){
         apple.update();
+      })
+      
+      Sim.bugs.forEach(function(bug) {
+        bug.update();
       })
       
       Sim.ants.forEach(function(ant) {
@@ -1003,12 +1146,20 @@
   global.ZUCKER = SUGAR;
   global.HÜGEL = HILL;
   global.APFEL = APPLE;
-
-  Object.defineProperty(global, 'Ziel', {
-    get: function() {
-      if (API.staticPlayerId === undefined)
-        return undefined;
-      var destination = undefined;
+  
+  var antProp = function(name, f) {
+    Object.defineProperty(global, name, {
+      get: function() {
+        if (API.staticPlayerId === undefined)
+          return undefined;
+        return f();
+      },
+      set: function(name) { }
+    });
+  }
+  
+  antProp('Ziel', ()=>{
+    var destination = undefined;
       var jobs = API.curAnt.getJobs();
       if (jobs.length > 0) {
         var index = jobs.length - 1;
@@ -1031,21 +1182,7 @@
         }
       }
       return destination;
-    },
-    set: function(name) { }
   });
-  
-  var antProp = function(name, f) {
-    Object.defineProperty(global, name, {
-      get: function() {
-        if (API.staticPlayerId === undefined)
-          return undefined;
-        return f();
-      },
-      set: function(name) { }
-    });
-  }
-  
   antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
   antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
   antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
@@ -1054,6 +1191,8 @@
   antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
   antProp('Reichweite', ()=>{return API.curAnt.getMaxDistance();});
   antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
+  antProp('Energie', ()=>{return API.curAnt.getEnergy();});
+  antProp('MaximaleEnergie', ()=>{return API.curAnt.getMaxEnergy();});
   antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
   antProp('GetragenerApfel', ()=>{
     var jobs = API.curAnt.getJobs();
@@ -1065,6 +1204,9 @@
       }
     }
     return undefined;
+  });
+  antProp('Position', ()=>{
+    return new Position(API.curAnt.getPos());
   });
   
   global.GeheSchritte = function(number) {
@@ -1103,6 +1245,8 @@
       API.curAnt.goToHome();
     if (obj.constructor.name == "Apple")
       API.curAnt.goToApple(obj);
+    if (ziel.constructor.name == "Position")
+      API.curAnt.goToPos(obj);
   }
   
   global.GeheZuBau = function() {
@@ -1124,6 +1268,15 @@
       return;
     if (typeof angle !== "number")
       return;
+    API.curAnt.addTurnToJob(angle);
+  }
+  
+  global.DreheWegVon = function(obj) {
+    if (API.staticPlayerId == undefined)
+      return;
+    if (obj.constructor.name != "Position")
+      obj = API.getObj(obj);
+    var angle = (getDir(API.curAnt.getPos(), obj.getPos()) + 180) % 360;
     API.curAnt.addTurnToJob(angle);
   }
   
@@ -1152,21 +1305,39 @@
     else
       return undefined;
   }
+  
+  global.RiecheNachWanze = function() {
+    if (API.staticPlayerId == undefined)
+      return;
+    var bug = closest(API.curAnt.getPos(), Sim.bugs, API.curAnt.getRange());
+    if (bug)
+      return API.pushObj(bug);
+    else
+      return undefined;
+  }
 
   global.BestimmeEntfernung = function(a, b) {
     if (API.staticPlayerId == undefined)
       return;
-    if (API.getObj(a) === undefined || API.getObj(b) === undefined)
+    if (a.constructor.name != "Position")
+      a = API.getObj(a);
+    if (b.constructor.name != "Position")
+      b = API.getObj(b);
+    if (a === undefined || b === undefined)
       return;
-    return dist(API.getObj(a).getPos(), API.getObj(b).getPos());
+    return dist(a.getPos(), b.getPos());
   }
   
   global.BestimmeWinkel = function(a, b) {
     if (API.staticPlayerId == undefined)
       return;
-    if (API.getObj(a) === undefined || API.getObj(b) === undefined)
+    if (a.constructor.name != "Position")
+      a = API.getObj(a);
+    if (b.constructor.name != "Position")
+      b = API.getObj(b);
+    if (a === undefined || b === undefined)
       return;
-    return getDir(API.getObj(a).getPos(), API.getObj(b).getPos());    
+    return getDir(a.getPos(), b.getPos());    
   }
   
   global.LasseZuckerFallen = function() {

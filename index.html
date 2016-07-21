@@ -22,6 +22,7 @@
 var Davidmeise = {};
 Davidmeise.Name = "David's Ameise";
 
+AntMe.LadeAmeise(Davidmeise);
 Davidmeise.Wartet = function(){
 };
 
@@ -90,14 +91,74 @@ Davidmeise.Tick = function(){
     //console.log(HatErinnerung("Nummer"));
   }
 }
-        
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
-AntMe.LadeAmeise(Davidmeise);
+
+var Ameise = {Name:"Supermeise"}; // gib hier den Namen deiner Ameise ein
+AntMe.LadeAmeise(Ameise);
+
+// ab hier kommt dein Code
+
+// Ameise hat nichts mehr zu tun
+Ameise.Wartet = function(){
+    GeheSchritte(Zufallszahl(10, 30));
+    DreheWinkel(Zufallszahl(-20, 20));
+};
+
+// Ameise hat den Rand des Spielfelds erreicht
+Ameise.RandErreicht = function(){
+    DreheWinkel(Zufallszahl(120, 180));
+}
+
+// Wird aufgerufen, sobald Ameise Zucker sieht und noch kein Ziel hat
+Ameise.SiehtZucker = function(zucker){
+    GeheZuZiel(zucker);
+}
+
+// Wird aufgerufen, sobald Ameise Apfel sieht und noch kein Ziel hat
+Ameise.SiehtApfel = function(apfel){
+    
+}
+
+// Ameise hat Zuckerhaufen erreicht
+Ameise.ZuckerErreicht = function(zucker){
+    Nimm(zucker);
+    FühreAus(()=>{
+      if (ZuckerLast < 2)
+          Stopp();
+    });
+    GeheZuBau();
+}
+
+// Ameise hat Apfel erreicht
+Ameise.ApfelErreicht = function(apfel){
+    
+}
+
+// Ameise ist im Bau angekommen
+Ameise.BauErreicht = function(){
+    DreheWinkel(180);
+    Vergesse("Müde");
+    GeheSchritte();
+}
+
+// Wird einmal aufgerufen, wenn Ameise geboren wird
+Ameise.IstGeboren = function(){
+    
+}
+
+// Wird einmal aufgerufen, wenn Ameise stirbt
+Ameise.IstGestorben = function(){
+}
+
+// Wird bedingungslos jede Runde aufgerufen
+Ameise.Tick = function(){
+    if (Reichweite - ZurückgelegteStrecke < 1500 && !HatErinnerung("Müde")) {
+    	GeheZuBau();
+        Merke("Müde");
+    }
+}
+
+AntMe.LadeAmeise(Ameise);
+AntMe.LadeAmeise(Ameise);
 AntMe.LadeAmeise(Davidmeise);
 //AntMe.LadeAmeise({Name:"Demo-Meise"});
 

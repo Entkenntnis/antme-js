@@ -8,7 +8,7 @@
   
  var Optionen = {
       MaximaleSpieler : 8
-    , Runden : 5000
+    , Runden : 8000
     , SpielfeldVerhältnis : 4.0/3.0
     , SpielfeldGrundGröße : 550000
     , HügelAbstand : 500
@@ -18,9 +18,9 @@
     , HügelRadius : 40
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
-    , ZuckerGröße : 200
+    , ZuckerGröße : 100
     , ZuckerVergrößerung : 0.1
-    , NahrungMindestEntfernung : 200
+    , NahrungMindestEntfernung : 300
     , NahrungMaximalEntfernung : 50000
     , NahrungAbstand : 200
     , NahrungsZentrierung : 2
@@ -46,6 +46,14 @@
     , EnergieProApfel : 2000
     , EnergieProZucker : 10
     , AmeisenReichweite : 3000
+    , WanzenProSpieler : 1
+    , WanzenWartezeit : 300
+    , AmeisenEnergie : 60
+    , WanzenKampfweite : 12
+    , WanzenAngriff : 10
+    , WanzeDrehgeschwindigkeit : 5
+    , WanzeGeschwindigkeit : 1
+    , WanzeSichtweite : 60
   }
   
   
