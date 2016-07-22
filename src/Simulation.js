@@ -1138,7 +1138,15 @@
       if (API.ctxt !== undefined && API.staticPlayerId !== undefined) {
         details = "\nVolk: " + Sim.players[API.staticPlayerId].getKI().Name + "\nAufruf: " + API.ctxt;
       }
-      console.warn(text + details);
+      alert("MELDUNG\n" + text + details);
+      
+      var error =  document.createElement("DIV");
+      error.innerHTML = "Simulationsfehler";
+      error.style.color = "red";
+      error.style.marginTop = "20px";
+      error.style.marginLeft = "50px";
+      error.style.fontWeight = "bold";
+      document.getElementById("hud").appendChild(error);
       throw "Simulationsfehler";
     }
   }
