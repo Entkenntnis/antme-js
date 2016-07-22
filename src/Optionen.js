@@ -53,6 +53,8 @@
     , WanzeDrehgeschwindigkeit : 5
     , WanzeGeschwindigkeit : 1
     , WanzeSichtweite : 60
+    , WanzenHügelAbstand : 250
+    , ZufallRichtungsVerschiebung : 11
   }
  
   //export

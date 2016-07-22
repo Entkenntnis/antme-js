@@ -495,7 +495,7 @@
         var jobs = ant.getJobs();
         if (jobs !== undefined) {
           var curJob = jobs[jobs.length - 1];
-          if (curJob.info().type == "APPLE")
+          if (curJob.type == "APPLE")
             return false;
         }
         return true;
@@ -581,7 +581,7 @@
         towait = 30;
         torotate = Math.floor(Math.random()*40-20);
         togo = 60;
-        var destHill = closest(pos, Sim.hills, Optionen.WanzeSichtweite * 2);
+        var destHill = closest(pos, Sim.hills, Optionen.WanzenHügelAbstand);
         if (destHill !== undefined) {
           var angle = getDir(pos, destHill.getPos()) + 180;
           torotate = Math.round(getRotation(heading, angle)/Optionen.WanzeDrehgeschwindigkeit);
@@ -591,7 +591,6 @@
             var dir = getDir(pos, ant.getPos());
             var rot = getRotation(heading, dir);
             torotate = Math.round(rot/Optionen.WanzeDrehgeschwindigkeit);
-            console.log(torotate);
           }
         }
         
@@ -729,21 +728,17 @@
       if (jobs.length > 0) {
         var index = jobs.length - 1;
         var curCmd = jobs[index];
-        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
+        while(index > 0 && curCmd.type != "DEST") {
           curCmd = jobs[--index];
         }
-        while(curCmd.type == "action" && curCmd.parent != undefined) {
-          curCmd = curCmd.parent;
-        }
-        var info = curCmd.info();
-        if (info.type == "DEST") {
-          if (info.value.constructor.name == "Sugar") {
+        if (curCmd.type == "DEST") {
+          if (curCmd.value.constructor.name == "Sugar") {
             destination = SUGAR;
-          } else if (info.value.constructor.name == "Hill") {
+          } else if (curCmd.value.constructor.name == "Hill") {
             destination = HILL;
-          } else if (info.value.constructor.name == "Apple") {
+          } else if (curCmd.value.constructor.name == "Apple") {
             destination = APPLE;
-          } else if (info.value.constructor.name == "Position") {
+          } else if (curCmd.value.constructor.name == "Position") {
             destination = POSITION;
           }
         }
@@ -760,9 +755,9 @@
       energy = maxEnergy;
     }
     
-    function actionMoveSteps(_steps) {
+    this.addGoJob = function(_steps) {
       var steps = _steps;
-      return [function() {
+      var cb = function() {
         var toMove = 0;
         var finished = false;
         var curSpeed = speed;
@@ -782,20 +777,16 @@
           this.setPos(newpos);
         } else {
           finished = true;
-          global.RestSchritte = steps;
-          API.callUserFunc("RandErreicht");
-          global.RestSchritte = undefined;
+          API.callUserFunc("RandErreicht", [steps]);
         }
         return finished;
-      },
-      function() {
-        return {type:"GO", value:steps};
-      }];
+      };
+      this.addJob(new Job("GO", steps, cb));
     }
     
-    function actionTurn(_degree) {
+    this.addTurnJob = function(_degree) {
       var degree = _degree;
-      return [function() {
+      var cb = function() {
         var toTurn = 0;
         var finished = false;
         if (Math.abs(degree) < rotationSpeed) {
@@ -807,27 +798,12 @@
         }
         this.turn(toTurn);
         return finished;
-      },
-      function() {
-        return {type:"TURN", value:degree};
-      }];
+      };
+      this.addJob(new Job("TURN", degree, cb));
     }
     
-    function actionTurnTo(_angle) {
-      var angle = _angle;
-      return [function() {
-        var rotation = getRotation(heading, angle);
-        if (rotation != 0)
-          this.addTurnJob(rotation);
-        return true;
-      },
-      function() {
-        return {type:"TURNTO", value:angle};
-      }];
-    }
-    
-    function actionTake(sugar) {
-      return [function() {
+    this.addTakeJob = function(sugar) {
+      var cb = function() {
         var d = dist(pos, sugar.getPos());
         if (d < 2) {
           while(load < maxLoad) {
@@ -841,50 +817,46 @@
         }
         updateGO();
         return true;
-      }, function() {
-        return {type:"TAKE",value:sugar};
-      }];
+      };
+      this.addJob(new Job("TAKE", sugar, cb));
     }
     
-    function actionDrop() {
-      return [function() {
+    this.addDropJob = function() {
+      var cb = function() {
         load = 0;
         updateGO();
         return true;
-      }, function() {
-        return {type:"DROP"};
-      }];
+      };
+      this.addJob(new Job("DROP", undefined, cb));
     }
     
-    function actionWait(_rounds) {
+    this.addWaitJob = function(_rounds) {
       var rounds = _rounds;
-      return [function() {
+      var cb = function() {
         if (rounds-- > 0) {
           return false;
         } else {
           return true;
         }
-      }, function() {
-        return {type:"WAIT",value:rounds};
-      }];
+      };
+      this.addJob(new Job("WAIT", rounds, cb));
     }
     
-    function actionCustom(_f) {
-      var f = _f;
-      return [function() {
-        var ret = f();
-        if (ret !== undefined)
-          return ret;
+    this.addTurnToJob = function(_angle) {
+      var angle = _angle;
+      var cb = function() {
+        var rotation = getRotation(heading, angle);
+        if (rotation != 0)
+          this.addTurnJob(rotation);
         return true;
-      }, function() {
-        return {type:"CUSTOM",value:f};
-      }];
+      };
+      this.addJob(new Job("TURNTO", angle, cb));
     }
     
-    function actionBringAppleHome(_apple) {
+    this.addAppleJob = function(_apple) {
       var apple = _apple;
       var setup = false;
-      return [function() {
+      var cb = function() {
         var index = Sim.apples.indexOf(apple);
         if (index < 0) {
           return true;
@@ -901,80 +873,42 @@
         heading = apple.heading;
         this.setPos({x:pos.x + apple.dx, y:pos.y + apple.dy});
         return false;
-      }, function() {
-        return {type:"APPLE",value:apple};
-      }];
+      };
+      this.addJob(new Job("APPLE", apple, cb));
     }
     
-    function cmdReachPos(obj, range, callback, thisjob) {
-      return [function() {
+    this.addCustomJob = function(_f) {
+      var f = _f;
+      var cb = function() {
+        var ret = f();
+        if (ret !== undefined)
+          return ret;
+        return true;
+      };
+      this.addJob(new Job("CUSTOM", f, cb));
+    }
+    
+    var gotoHelper = function(obj, snap, f) {
+      var cb = function() {
         var des = obj.getPos();
         var d = dist(pos, des);
-        if (d < range) {
-          callback.bind(this)();
+        if (d < snap) {
+          f.bind(this)();
           return true;
         } else {
           var angle = getDir(pos, des);
           var rotation = getRotation(heading, angle);
-          rotation += Math.floor(Math.random()*10-5);
+          var v = Optionen.ZufallRichtungsVerschiebung;
+          rotation += Math.floor(Math.random()*v*2-v);
           if (rotation != 0)
-            this.addTurnJob(rotation, thisjob);
-          this.addGoJob(Math.min(50, d), thisjob);
+            this.addTurnJob(rotation);
+          this.addGoJob(Math.min(50, d));
           return false;
         }
-      },function() {
-        return {type:"DEST",value:obj};
-      }];
-    }
-    
-    this.addGoJob = function(steps, parent) {
-      var funcs = actionMoveSteps(steps);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addTurnJob = function(degree, parent) {
-      var funcs = actionTurn(degree);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addTakeJob = function(sugar, parent) {
-      var funcs = actionTake(sugar);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addDropJob = function(parent) {
-      var funcs = actionDrop();
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addWaitJob = function(rounds, parent) {
-      var funcs = actionWait(rounds);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addTurnToJob = function(angle, parent) {
-      var funcs = actionTurnTo(angle);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addAppleJob = function(apple, parent) {
-      var funcs = actionBringAppleHome(apple);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    this.addCustomJob = function(f, parent) {
-      var funcs = actionCustom(f);
-      this.addJob(new Job("action", parent, funcs[0], funcs[1]));
-    }
-    
-    var gotoHelper = function(obj, snap, f) {
-      var parent = new Job("command", parent);
-      var funcs = cmdReachPos(obj, snap, f, parent);
-      parent.callback = funcs[0];
-      parent.info = funcs[1];
+      };
       jobs.splice(0, insertionPoint);
       insertionPoint = 0;
-      this.addJob(parent);
+      this.addJob(new Job("DEST", obj, cb));
     }.bind(this);
     
     this.goToSugar = function(sugar, parent) {
@@ -1044,11 +978,10 @@
   
   
   // JOB
-  function Job(type, parent, callback, info) {
+  function Job(type, value, cb) {
     this.type = type;
-    this.parent = parent;
-    this.callback = callback;
-    this.info = info;
+    this.value = value;
+    this.callback = cb;
   }
   
   // Position
@@ -1145,7 +1078,11 @@
         return;
       if (API.staticPlayerId === undefined)
         return;
-      func.apply(API.pushObj(API.curAnt), arg.map(API.pushObj));
+      func.apply(API.pushObj(API.curAnt), arg.map(function (obj) {
+        if (typeof obj == "object")
+          return API.pushObj(obj);
+        return obj;
+      }));
     }
     
     this.pushObj=function(obj) {
@@ -1208,9 +1145,8 @@
     var jobs = API.curAnt.getJobs();
     if (jobs.length > 0) {
       var curJob = jobs[jobs.length - 1];
-      var info = curJob.info();
-      if (info.type == "APPLE") {
-        return API.pushObj(info.value);
+      if (curJob.type == "APPLE") {
+        return API.pushObj(curJob.value);
       }
     }
     return undefined;
