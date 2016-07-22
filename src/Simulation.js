@@ -710,6 +710,9 @@
     this.turn = function(degree) {
       heading += Math.round(degree);
       heading %= 360;
+      while (heading < 0)
+        heading += 360;
+      heading = Math.round(heading);
       updateGO();
     }
     
@@ -1126,7 +1129,7 @@
           }
           args.push(e);
         }
-        f.apply(undefined, args);
+        return f.apply(undefined, args);
       }
     }
     
@@ -1136,6 +1139,7 @@
         details = "\nVolk: " + Sim.players[API.staticPlayerId].getKI().Name + "\nAufruf: " + API.ctxt;
       }
       console.warn(text + details);
+      throw "Simulationsfehler";
     }
   }
   
@@ -1205,7 +1209,7 @@
   
   API.addFunc("Gehe", (schritte)=>{
     if (typeof schritte !== "number" || schritte < 0) {
-      API.message("Die Funktion 'Gehe()' erwartet als Argument eine positive Zahl.");
+      API.message("Die Funktion 'Gehe(schritte)' erwartet als Argument eine positive Zahl.");
       return;
     }
     schritte = Math.round(schritte);
@@ -1225,7 +1229,7 @@
   
   API.addFunc("Drehe", (winkel) => {
     if (typeof winkel !== "number") {
-      API.message("Die Funktion 'Drehe()' erwartet als Argument eine Zahl.");
+      API.message("Die Funktion 'Drehe(winkel)' erwartet als Argument eine Zahl.");
       return;
     }
     winkel = Math.round(winkel);
@@ -1236,7 +1240,7 @@
   
   API.addFunc("DreheZuRichtung", (richtung) => {
     if (typeof richtung !== "number") {
-      API.message("Die Funktion 'DreheZuRichtung()' erwartet als Argument eine Zahl.");
+      API.message("Die Funktion 'DreheZuRichtung(richtung)' erwartet als Argument eine Zahl.");
       return;
     }
     var richtung = Math.round(richtung) % 360;
@@ -1249,13 +1253,35 @@
     API.curAnt.goToHome();
   })
   
-  global.Zufallszahl = function(a, b) {
-    if (b == undefined) {
-      return Math.floor(Math.random()*a);
+  API.addFunc("Zufallszahl", (a, b) => {
+    if (b === undefined) {
+      if (typeof a !== "number" || a < 0) {
+        API.message("Die Funktion 'Zufallszahl(max)' erwartet als Argument eine positive Zahl.");
+        return;
+      }
+      return Math.floor(Math.random() * a);
     } else {
-      return Math.floor(Math.random()*(b-a))+a;
+      if (typeof a !== "number" || typeof b!== "number") {
+        API.message("Die Funktion 'Zufallszahl(min, max)' erwartet als Argument Zahlen.");
+        return;
+      }
+      if (a >= b) {
+        API.message("Die Funktion 'Zufallszahl(min, max)' erwartet, dass min < max ist.");
+        return;
+      }
+      return Math.floor(Math.random() * (b - a) + a);
     }
-  }
+  })
+  
+  API.addFunc("Stehe", (runden) => {
+    if (typeof runden !== "number" || runden < 0) {
+      API.message("Die Funktion 'Stehe(runden)' erwartet als Argument eine positive Zahl.");
+      return;
+    }
+    runden = Math.round(runden);
+    if (runden > 0)
+      API.curAnt.addWaitJob(runden);
+  });
   
   API.addFunc("GeheZuZiel", (ziel) => {
     var obj = ziel;
@@ -1353,12 +1379,6 @@
     if (API.staticPlayerId == undefined)
       return;
     API.curAnt.addDropJob();
-  }
-  
-  global.Warte = function(runden) {
-    if (API.staticPlayerId == undefined)
-      return;
-    API.curAnt.addWaitJob(runden);
   }
   
   global.FühreAus = function(f) {
