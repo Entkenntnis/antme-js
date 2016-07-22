@@ -27,8 +27,8 @@ Davidmeise.Wartet = function(){
 };
 
 Davidmeise.RandErreicht = function(RestSchritte){
-  DreheWinkel(120 + Zufallszahl(80));
-  GeheSchritte(RestSchritte);
+  Drehe(120 + Zufallszahl(80));
+  Gehe(RestSchritte);
 }
 
 Davidmeise.SiehtZucker = function(zucker){
@@ -42,8 +42,8 @@ Davidmeise.ZuckerErreicht = function(zucker){
 }
 
 Davidmeise.BauErreicht = function(){
-  DreheWinkel(180);
-  GeheSchritte();
+  Drehe(180);
+  GeheGeradeaus();
   Vergesse("Müde");
 }
 
@@ -85,8 +85,8 @@ Davidmeise.Tick = function(){
     GeheZuBau();
   }
   if (Untätig) {
-    GeheSchritte(Zufallszahl(10, 30));
-    DreheWinkel(Zufallszahl(-40, 40));
+    Gehe(Zufallszahl(10, 30));
+    Drehe(Zufallszahl(-40, 40));
     Stopp();
     //console.log(HatErinnerung("Nummer"));
   }
@@ -99,13 +99,13 @@ AntMe.LadeAmeise(Ameise);
 
 // Ameise hat nichts mehr zu tun
 Ameise.Wartet = function(){
-    GeheSchritte(Zufallszahl(10, 30));
-    DreheWinkel(Zufallszahl(-20, 20));
+    Gehe(Zufallszahl(10, 30));
+    Drehe(Zufallszahl(-20, 20));
 };
 
 // Ameise hat den Rand des Spielfelds erreicht
 Ameise.RandErreicht = function(){
-    DreheWinkel(Zufallszahl(120, 180));
+    Drehe(Zufallszahl(120, 180));
 }
 
 // Wird aufgerufen, sobald Ameise Zucker sieht und noch kein Ziel hat
@@ -135,9 +135,9 @@ Ameise.ApfelErreicht = function(apfel){
 
 // Ameise ist im Bau angekommen
 Ameise.BauErreicht = function(){
-    DreheWinkel(180);
+    Drehe(180);
     Vergesse("Müde");
-    GeheSchritte();
+    GeheGeradeaus();
 }
 
 // Wird einmal aufgerufen, wenn Ameise geboren wird

@@ -784,6 +784,20 @@
       this.addJob(new Job("GO", steps, cb));
     }
     
+    this.addGoStraightJob = function() {
+      var cb = function () {
+        var newpos = moveDir(pos, heading, speed);
+        if (Sim.playground.isInBound(newpos, 2)) {
+          this.setPos(newpos);
+        } else {
+          API.callUserFunc("RandErreicht", [0]);
+          return true;
+        }
+        return false;
+      }
+      this.addJob(new Job("GOSTRAIGHT", undefined, cb));
+    }
+    
     this.addTurnJob = function(_degree) {
       var degree = _degree;
       var cb = function() {
@@ -984,13 +998,6 @@
     this.callback = cb;
   }
   
-  // Position
-  function Position(_pos) {
-    var pos = _pos;
-    this.getPos = function() {
-      return pos;
-    }
-  }
   
   
 // ALL MANAGER
@@ -1051,33 +1058,32 @@
   var APIWrapper = function() {
     this.ants = []
     
-    this.staticPlayerId = undefined
-    this.curAnt = undefined
-    this.objStore = []
-    this.keyStore = []
-    this.objCounter = 0
+    this.staticPlayerId = undefined;
+    this.curAnt = undefined;
+    this.callId = 0;
+    this.ctxt = "";
     
-    this.setAnt=function(ant) {
+    this.setAnt = function(ant) {
       API.curAnt = ant;
       API.staticPlayerId = ant.getPlayerid();
+      this.callId++;
     }
     
-    this.close=function() {
+    this.close = function() {
       API.curAnt = undefined;
       API.staticPlayerId = undefined;
-      API.keyStore = [];
-      API.objStore = [];
-      API.objCounter = 0;
+      API.ctxt = undefined;
     }
     
-    this.callUserFunc=function(func, arg) {
-      func = Sim.players[API.curAnt.getPlayerid()].getKI()[func];
+    this.callUserFunc = function(name, arg) {
+      var func = Sim.players[API.curAnt.getPlayerid()].getKI()[name];
       if (arg == undefined)
         arg = [];
       if (func == undefined)
         return;
       if (API.staticPlayerId === undefined)
         return;
+      API.ctxt = "Ameise." + name + " = " + func;
       func.apply(API.pushObj(API.curAnt), arg.map(function (obj) {
         if (typeof obj == "object")
           return API.pushObj(obj);
@@ -1086,19 +1092,72 @@
     }
     
     this.pushObj=function(obj) {
-      var id = API.objCounter++;
-      API.objStore.push(obj);
-      return API.registerKey(id);
+      return new SimObject(obj);
     }
     
-    this.getObj=function(id) {
-      return API.objStore[API.keyStore[id]];
+    this.getObj=function(simObj) {
+      return simObj.get(Sim);
     }
     
-    this.registerKey=function(index) {
-      var key = Math.random() + "";
-      API.keyStore[key] = index;
-      return key;
+    this.antProp = function(name, f) {
+      Object.defineProperty(global, name, {
+        get: function() {
+          if (API.staticPlayerId === undefined) {
+            console.warn("Die Eigenschaft '" + name + "' kann nur innerhalb einer Ameise aufgerufen werden.");
+            return;
+          }
+          return f();
+        },
+        set: function(name) { }
+      });
+    };
+    
+    this.addFunc = function(name, f) {
+      global[name] = function() {
+        if (API.staticPlayerId === undefined) {
+          console.warn("Die Funktion '" + name + "()' kann nur innerhalb einer Ameise aufgerufen werden.");
+          return;
+        }
+        var args = []
+        for(var i = 0; i < arguments.length; i++) {
+          var e = arguments[i];
+          if (typeof e == "object" && e.constructor.name == "SimObject") {
+            args.push(e.get(Sim));
+          }
+          args.push(e);
+        }
+        f.apply(undefined, args);
+      }
+    }
+    
+    this.message = function(text) {
+      var details = "";
+      if (API.ctxt !== undefined && API.staticPlayerId !== undefined) {
+        details = "\nVolk: " + Sim.players[API.staticPlayerId].getKI().Name + "\nAufruf: " + API.ctxt;
+      }
+      console.warn(text + details);
+    }
+  }
+  
+  // Position
+  function Position(_pos) {
+    var pos = _pos;
+    this.getPos = function() {
+      return pos;
+    }
+  }
+  
+  // SimObject
+  function SimObject(_obj) {
+    var roundId = API.callId;
+    var obj = _obj;
+    
+    this.get = function(key) {
+      if (key === Sim && API.callId == roundId) {
+        return obj;
+      }
+      API.message("Objekt ist abgelaufen und kann nicht mehr verwendet werden.")
+      return;
     }
   }
   
@@ -1112,36 +1171,25 @@
   }
   
   global.ZUCKER = SUGAR;
-  global.HÜGEL = HILL;
+  global.BAU = HILL;
   global.APFEL = APPLE;
   global.POSITION = POSITION;
   
-  var antProp = function(name, f) {
-    Object.defineProperty(global, name, {
-      get: function() {
-        if (API.staticPlayerId === undefined)
-          return undefined;
-        return f();
-      },
-      set: function(name) { }
-    });
-  }
-  
-  antProp('Ziel', ()=>{
+  API.antProp('Ziel', ()=>{
     return API.curAnt.getDestination();
   });
-  antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
-  antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
-  antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
-  antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
-  antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
-  antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
-  antProp('Reichweite', ()=>{return API.curAnt.getMaxDistance();});
-  antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
-  antProp('Energie', ()=>{return API.curAnt.getEnergy();});
-  antProp('MaximaleEnergie', ()=>{return API.curAnt.getMaxEnergy();});
-  antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
-  antProp('GetragenerApfel', ()=>{
+  API.antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
+  API.antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
+  API.antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
+  API.antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
+  API.antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
+  API.antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
+  API.antProp('Reichweite', ()=>{return API.curAnt.getMaxDistance();});
+  API.antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
+  API.antProp('Energie', ()=>{return API.curAnt.getEnergy();});
+  API.antProp('MaximaleEnergie', ()=>{return API.curAnt.getMaxEnergy();});
+  API.antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
+  API.antProp('GetragenerApfel', ()=>{
     var jobs = API.curAnt.getJobs();
     if (jobs.length > 0) {
       var curJob = jobs[jobs.length - 1];
@@ -1151,27 +1199,55 @@
     }
     return undefined;
   });
-  antProp('Position', ()=>{
+  API.antProp('Position', ()=>{
     return new Position(API.curAnt.getPos());
   });
   
-  global.GeheSchritte = function(number) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("Gehe", (schritte)=>{
+    if (typeof schritte !== "number" || schritte < 0) {
+      API.message("Die Funktion 'Gehe()' erwartet als Argument eine positive Zahl.");
       return;
-    if (number == undefined)
-      number = 10000000;
-    if (typeof number !== "number")
-      return;
-    API.curAnt.addGoJob(number);
-  }
+    }
+    schritte = Math.round(schritte);
+    if (schritte > 0)
+      API.curAnt.addGoJob(schritte);
+  })
   
-  global.DreheWinkel = function(degree) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("GeheGeradeaus", ()=>{
+    API.curAnt.addGoStraightJob();
+  });
+  
+  API.addFunc("Stopp", ()=>{
+    API.curAnt.addCustomJob(()=>{
+      API.curAnt.stop();
+    })
+  });
+  
+  API.addFunc("Drehe", (winkel) => {
+    if (typeof winkel !== "number") {
+      API.message("Die Funktion 'Drehe()' erwartet als Argument eine Zahl.");
       return;
-    if (typeof degree !== "number")
+    }
+    winkel = Math.round(winkel);
+    if (winkel != 0) {
+      API.curAnt.addTurnJob(winkel);
+    }
+  });
+  
+  API.addFunc("DreheZuRichtung", (richtung) => {
+    if (typeof richtung !== "number") {
+      API.message("Die Funktion 'DreheZuRichtung()' erwartet als Argument eine Zahl.");
       return;
-    API.curAnt.addTurnJob(degree);
-  }
+    }
+    var richtung = Math.round(richtung) % 360;
+    while (richtung < 0)
+      richtung += 360;
+    API.curAnt.addTurnToJob(richtung);
+  });
+  
+  API.addFunc("GeheZuBau", () => {
+    API.curAnt.goToHome();
+  })
   
   global.Zufallszahl = function(a, b) {
     if (b == undefined) {
@@ -1181,10 +1257,8 @@
     }
   }
   
-  global.GeheZuZiel = function(ziel) {
-    if (API.staticPlayerId == undefined)
-      return;
-    var obj = API.getObj(ziel);
+  API.addFunc("GeheZuZiel", (ziel) => {
+    var obj = ziel;
     if (obj.constructor.name == "Sugar")
       API.curAnt.goToSugar(obj);
     if (obj.constructor.name == "Hill")
@@ -1193,13 +1267,7 @@
       API.curAnt.goToApple(obj);
     if (ziel.constructor.name == "Position")
       API.curAnt.goToPos(obj);
-  }
-  
-  global.GeheZuBau = function() {
-    if (API.staticPlayerId == undefined)
-      return;
-    API.curAnt.goToHome();
-  }
+  });
   
   global.Nimm = function(obj) {
     if (API.staticPlayerId == undefined)
@@ -1209,14 +1277,6 @@
       API.curAnt.addTakeJob(obj);
   }
   
-  global.DreheZu = function(angle) {
-    if (API.staticPlayerId == undefined)
-      return;
-    if (typeof angle !== "number")
-      return;
-    API.curAnt.addTurnToJob(angle);
-  }
-  
   global.DreheWegVon = function(obj) {
     if (API.staticPlayerId == undefined)
       return;
@@ -1224,12 +1284,6 @@
       obj = API.getObj(obj);
     var angle = (getDir(API.curAnt.getPos(), obj.getPos()) + 180) % 360;
     API.curAnt.addTurnToJob(angle);
-  }
-  
-  global.Stopp = function() {
-    if (API.staticPlayerId == undefined)
-      return;
-    FühreAus(()=>{API.curAnt.stop()});
   }
   
   global.RiecheNachZucker = function() {
@@ -1367,8 +1421,9 @@
     }    
   }
 
+  // vor debugging purposes
   global.Sim = Sim;
-  global.VW = vw;
+  global.Vw = vw;
 
 
 
