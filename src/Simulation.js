@@ -78,11 +78,7 @@
   var SUGAR = "Sugar";
   var HILL = "Hill";
   var APPLE = "Apple";
-  
-
-
-
-
+  var POSITION = "Postion";
 
     // PLAYER
   function Player(_id, _KI) {
@@ -406,7 +402,7 @@
       var GO = vw.sugarStore.get(key);
       GO.position.copy(toViewPos(pos));
       var linScale = amount / Optionen.ZuckerGröße * Optionen.ZuckerVergrößerung;
-      var scale = Math.max(Math.pow(linScale, 1/3.0), 0.000001);
+      var scale = Math.max(Math.pow(linScale, 1/2), 0.000001);
       GO.scale.set(scale, scale, scale);
     }
     
@@ -584,14 +580,21 @@
       } else {
         towait = 30;
         torotate = Math.floor(Math.random()*40-20);
-        togo = 35
-        ant = closest(pos, Sim.ants, Optionen.WanzeSichtweite);
-        if (ant!= undefined) {
-          var dir = getDir(pos, ant.getPos());
-          var rot = getRotation(heading, dir);
-          torotate = Math.round(rot/Optionen.WanzeDrehgeschwindigkeit);
-          console.log(torotate);
+        togo = 60;
+        var destHill = closest(pos, Sim.hills, Optionen.WanzeSichtweite * 2);
+        if (destHill !== undefined) {
+          var angle = getDir(pos, destHill.getPos()) + 180;
+          torotate = Math.round(getRotation(heading, angle)/Optionen.WanzeDrehgeschwindigkeit);
+        } else {
+          ant = closest(pos, Sim.ants, Optionen.WanzeSichtweite);
+          if (ant!= undefined) {
+            var dir = getDir(pos, ant.getPos());
+            var rot = getRotation(heading, dir);
+            torotate = Math.round(rot/Optionen.WanzeDrehgeschwindigkeit);
+            console.log(torotate);
+          }
         }
+        
       }
       updateGO();
     }
@@ -718,6 +721,34 @@
     this.stop = function() {
       jobs = [];
       insertionPoint = 0;
+    }
+    
+    this.getDestination = function() {
+      var destination = undefined;
+      var jobs = API.curAnt.getJobs();
+      if (jobs.length > 0) {
+        var index = jobs.length - 1;
+        var curCmd = jobs[index];
+        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
+          curCmd = jobs[--index];
+        }
+        while(curCmd.type == "action" && curCmd.parent != undefined) {
+          curCmd = curCmd.parent;
+        }
+        var info = curCmd.info();
+        if (info.type == "DEST") {
+          if (info.value.constructor.name == "Sugar") {
+            destination = SUGAR;
+          } else if (info.value.constructor.name == "Hill") {
+            destination = HILL;
+          } else if (info.value.constructor.name == "Apple") {
+            destination = APPLE;
+          } else if (info.value.constructor.name == "Position") {
+            destination = POSITION;
+          }
+        }
+      }
+      return destination;
     }
     
     function reachedHome() {
@@ -988,21 +1019,21 @@
       }
       
       // sights
-      if (global.Ziel === undefined) {
+      if (this.getDestination() === undefined) {
         var sugar = closest(pos, Sim.sugars, range);
         if (sugar != undefined) {
           API.callUserFunc("SiehtZucker", [sugar]);
         }
       }
       
-      if (global.Ziel === undefined) {
+      if (this.getDestination() === undefined) {
         var apple = closest(pos, Sim.apples, range);
         if (apple != undefined) {
           API.callUserFunc("SiehtApfel", [apple]);
         }
       }
       
-      if(global.Untätig) {
+      if(this.getJobs().length == 0) {
         API.callUserFunc("Wartet");
       }
       
@@ -1146,6 +1177,7 @@
   global.ZUCKER = SUGAR;
   global.HÜGEL = HILL;
   global.APFEL = APPLE;
+  global.POSITION = POSITION;
   
   var antProp = function(name, f) {
     Object.defineProperty(global, name, {
@@ -1159,29 +1191,7 @@
   }
   
   antProp('Ziel', ()=>{
-    var destination = undefined;
-      var jobs = API.curAnt.getJobs();
-      if (jobs.length > 0) {
-        var index = jobs.length - 1;
-        var curCmd = jobs[index];
-        while(curCmd.type == "action" && curCmd.parent == undefined && index > 0) {
-          curCmd = jobs[--index];
-        }
-        while(curCmd.type == "action" && curCmd.parent != undefined) {
-          curCmd = curCmd.parent;
-        }
-        var info = curCmd.info();
-        if (info.type == "DEST") {
-          if (info.value.constructor.name == "Sugar") {
-            destination = SUGAR;
-          } else if (info.value.constructor.name == "Hill") {
-            destination = HILL;
-          } else if (info.value.constructor.name == "Apple") {
-            destination = APPLE;
-          }
-        }
-      }
-      return destination;
+    return API.curAnt.getDestination();
   });
   antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
   antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
@@ -1338,6 +1348,15 @@
     if (a === undefined || b === undefined)
       return;
     return getDir(a.getPos(), b.getPos());    
+  }
+  
+  global.BestimmePosition = function(obj) {
+    if (API.staticPlayerId == undefined)
+      return;
+    obj = API.getObj(obj);
+    if (obj === undefined || !("getPos" in obj))
+      return undefined;
+    return new Position(obj.getPos());
   }
   
   global.LasseZuckerFallen = function() {

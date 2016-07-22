@@ -1,12 +1,11 @@
-"use strict";
-
 // File 1: exports _vw into AntMe, which is the interface to all graphic objects
 //         and the init function to start everything
 
 var AntMe = {};
 
-(function(am){
-
+(function(am) {
+  
+  "use strict";
   // project-wide variables
   var scene, camera, renderer, stats, controls, manager;
 
@@ -118,7 +117,7 @@ var AntMe = {};
     this.sugar0 = undefined
     this.apple0 = undefined
     this.sugarBox0 = undefined
-    this.marker0 = undefined
+    //this.marker0 = undefined
     this.gamefloor = undefined
     this.skybox = undefined
     this.antStore = undefined
@@ -127,7 +126,7 @@ var AntMe = {};
     this.appleStore = undefined
     this.bugStore = undefined
     this.sugarBoxStore = undefined
-    this.markerStore = undefined
+    //this.markerStore = undefined
     this.needRedraw = true
     this.onExtLoad = function(){}
     
@@ -215,7 +214,7 @@ var AntMe = {};
       this.sugarBox0 = new THREE.Mesh( sugarBoxGeo, new THREE.MeshPhongMaterial({color:0xffffff}) );
       this.sugarBox0.scale.set(2,2,2);
       
-      // marker-sphere
+      /*// marker-sphere
       var geometry1 = new THREE.SphereGeometry(40,32,24);
       var material1 = new THREE.MeshLambertMaterial({color: 0x00ff00, transparent: true, opacity: 0.2});
       var sphere1 = new THREE.Mesh(geometry1, material1);
@@ -233,7 +232,7 @@ var AntMe = {};
       var line = new THREE.Line(geometry, material);
       line.rotation.x = Math.PI/2;
       line.position.y = 0.5;
-      //scene.add( line );
+      //scene.add( line );*/
     }
     
     this.onLoad = function(){
@@ -244,7 +243,7 @@ var AntMe = {};
       this.bugStore = new UnitStore(this.bug0);
       this.sugarStore = new UnitStore(this.sugar0);
       this.sugarBoxStore = new UnitStore(this.sugarBox0);
-      this.markerStore = new UnitStore(this.marker0);
+      //this.markerStore = new UnitStore(this.marker0);
     }
     
     this.setAntBodyColor = function(ant, c){
