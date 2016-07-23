@@ -19,10 +19,8 @@
         <script src="src/SimPulse.js"></script>
         <script>
         
-var Davidmeise = {};
-Davidmeise.Name = "David's Ameise";
-
-AntMe.LadeAmeise(Davidmeise);
+var Davidmeise = AntMe.NeueAmeise("David's Ameise");
+          
 Davidmeise.Wartet = function(){
 };
 
@@ -121,7 +119,7 @@ Ameise.SiehtApfel = function(apfel){
 // Ameise hat Zuckerhaufen erreicht
 Ameise.ZuckerErreicht = function(zucker){
     Nimm(zucker);
-    FühreAus(()=>{
+    FühreAus(function(){
       if (ZuckerLast < 2)
           Stopp();
     });
@@ -135,7 +133,7 @@ Ameise.ApfelErreicht = function(apfel){
 
 // Ameise ist im Bau angekommen
 Ameise.BauErreicht = function(){
-    Drehe(180 + "asa");
+    Drehe(180);
     Vergesse("Müde");
     GeheGeradeaus();
 }

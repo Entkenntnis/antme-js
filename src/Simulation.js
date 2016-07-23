@@ -1140,14 +1140,7 @@
       }
       alert("MELDUNG\n" + text + details);
       
-      var error =  document.createElement("DIV");
-      error.innerHTML = "Simulationsfehler";
-      error.style.color = "red";
-      error.style.marginTop = "20px";
-      error.style.marginLeft = "50px";
-      error.style.fontWeight = "bold";
-      document.getElementById("hud").appendChild(error);
-      throw "Simulationsfehler";
+      am._abortSimulation();
     }
   }
   
@@ -1182,26 +1175,43 @@
     }
   }
   
+  am.NeueAmeise = function (name) {
+    var newAnt = {Name:name};
+    am.LadeAmeise(newAnt);
+    return newAnt;
+  }
+  
+  am._abortSimulation = function () {
+    var error =  document.createElement("DIV");
+    error.innerHTML = "Simulationsfehler";
+    error.style.color = "red";
+    error.style.marginTop = "20px";
+    error.style.marginLeft = "50px";
+    error.style.fontWeight = "bold";
+    document.getElementById("hud").appendChild(error);
+    throw "Simulationsfehler";
+  }
+  
   global.ZUCKER = SUGAR;
   global.BAU = HILL;
   global.APFEL = APPLE;
   global.POSITION = POSITION;
   
-  API.antProp('Ziel', ()=>{
+  API.antProp('Ziel', function(){
     return API.curAnt.getDestination();
   });
-  API.antProp('Untätig', ()=>{return API.curAnt.getJobs().length == 0;});
-  API.antProp('ZuckerLast', ()=>{return API.curAnt.getLoad();});
-  API.antProp('Blickrichtung', ()=>{return API.curAnt.getHeading();});
-  API.antProp('Sichtweite', ()=>{return API.curAnt.getRange();});
-  API.antProp('MaximaleLast', ()=>{return API.curAnt.getMaxLoad();});
-  API.antProp('MaximaleGeschwindigkeit', ()=>{return API.curAnt.getMaxSpeed();});
-  API.antProp('Reichweite', ()=>{return API.curAnt.getMaxDistance();});
-  API.antProp('ZurückgelegteStrecke', ()=>{return API.curAnt.getLap();});
-  API.antProp('Energie', ()=>{return API.curAnt.getEnergy();});
-  API.antProp('MaximaleEnergie', ()=>{return API.curAnt.getMaxEnergy();});
-  API.antProp('Bau', ()=>{return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
-  API.antProp('GetragenerApfel', ()=>{
+  API.antProp('Untätig', function(){return API.curAnt.getJobs().length == 0;});
+  API.antProp('ZuckerLast', function(){return API.curAnt.getLoad();});
+  API.antProp('Blickrichtung', function(){return API.curAnt.getHeading();});
+  API.antProp('Sichtweite', function(){return API.curAnt.getRange();});
+  API.antProp('MaximaleLast', function(){return API.curAnt.getMaxLoad();});
+  API.antProp('MaximaleGeschwindigkeit', function(){return API.curAnt.getMaxSpeed();});
+  API.antProp('Reichweite', function(){return API.curAnt.getMaxDistance();});
+  API.antProp('ZurückgelegteStrecke', function(){return API.curAnt.getLap();});
+  API.antProp('Energie', function(){return API.curAnt.getEnergy();});
+  API.antProp('MaximaleEnergie', function(){return API.curAnt.getMaxEnergy();});
+  API.antProp('Bau', function(){return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
+  API.antProp('GetragenerApfel', function(){
     var jobs = API.curAnt.getJobs();
     if (jobs.length > 0) {
       var curJob = jobs[jobs.length - 1];
@@ -1211,11 +1221,11 @@
     }
     return undefined;
   });
-  API.antProp('Position', ()=>{
+  API.antProp('Position', function(){
     return new Position(API.curAnt.getPos());
   });
   
-  API.addFunc("Gehe", (schritte)=>{
+  API.addFunc("Gehe", function (schritte) {
     if (typeof schritte !== "number" || schritte < 0) {
       API.message("Die Funktion 'Gehe(schritte)' erwartet als Argument eine positive Zahl.");
       return;
@@ -1225,17 +1235,17 @@
       API.curAnt.addGoJob(schritte);
   })
   
-  API.addFunc("GeheGeradeaus", ()=>{
+  API.addFunc("GeheGeradeaus", function(){
     API.curAnt.addGoStraightJob();
   });
   
-  API.addFunc("Stopp", ()=>{
-    API.curAnt.addCustomJob(()=>{
+  API.addFunc("Stopp", function(){
+    API.curAnt.addCustomJob(function(){
       API.curAnt.stop();
     })
   });
   
-  API.addFunc("Drehe", (winkel) => {
+  API.addFunc("Drehe", function (winkel) {
     if (typeof winkel !== "number") {
       API.message("Die Funktion 'Drehe(winkel)' erwartet als Argument eine Zahl.");
       return;
@@ -1246,7 +1256,7 @@
     }
   });
   
-  API.addFunc("DreheZuRichtung", (richtung) => {
+  API.addFunc("DreheZuRichtung", function (richtung) {
     if (typeof richtung !== "number") {
       API.message("Die Funktion 'DreheZuRichtung(richtung)' erwartet als Argument eine Zahl.");
       return;
@@ -1257,11 +1267,11 @@
     API.curAnt.addTurnToJob(richtung);
   });
   
-  API.addFunc("GeheZuBau", () => {
+  API.addFunc("GeheZuBau", function () {
     API.curAnt.goToHome();
   })
   
-  API.addFunc("Zufallszahl", (a, b) => {
+  API.addFunc("Zufallszahl", function (a, b) {
     if (b === undefined) {
       if (typeof a !== "number" || a < 0) {
         API.message("Die Funktion 'Zufallszahl(max)' erwartet als Argument eine positive Zahl.");
@@ -1281,7 +1291,7 @@
     }
   })
   
-  API.addFunc("Stehe", (runden) => {
+  API.addFunc("Stehe", function (runden) {
     if (typeof runden !== "number" || runden < 0) {
       API.message("Die Funktion 'Stehe(runden)' erwartet als Argument eine positive Zahl.");
       return;
@@ -1291,7 +1301,7 @@
       API.curAnt.addWaitJob(runden);
   });
   
-  API.addFunc("GeheZuZiel", (ziel) => {
+  API.addFunc("GeheZuZiel", function (ziel)  {
     var obj = ziel;
     if (obj.constructor.name == "Sugar")
       API.curAnt.goToSugar(obj);
