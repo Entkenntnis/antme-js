@@ -480,7 +480,7 @@
       if (pid !== undefined) {
         this.heading = getDir(this.getPos(), Sim.hills[pid].getPos());
         // Geschwindigkeit zwischen 0.2 und 1
-        var speed = 0.2 + 0.8 * (this.ants.length / Optionen.MaximumAmeisenFürApfel);
+        var speed = Optionen.ApfelMinGeschwindigkeit + (Optionen.ApfelMaxGeschwindigkeit - Optionen.ApfelMinGeschwindigkeit) * (this.ants.length / Optionen.MaximumAmeisenFürApfel);
         this.dx =  speed*Math.cos(this.heading/180*Math.PI);
         this.dy = speed*Math.sin(this.heading/180*Math.PI);
         pos.x += this.dx;
@@ -905,8 +905,12 @@
       this.addJob(new Job("CUSTOM", f, cb));
     }
     
-    var gotoHelper = function(obj, snap, f) {
+    var gotoHelper = function(obj, snap, f, col) {
       var cb = function() {
+        if (col !== undefined) {
+          if (col.indexOf(obj) < 0)
+            return true;
+        }
         var des = obj.getPos();
         var d = dist(pos, des);
         if (d < snap) {
@@ -931,13 +935,13 @@
     this.goToSugar = function(sugar, parent) {
       gotoHelper(sugar, 1, function() {
         API.callUserFunc("ZuckerErreicht", [sugar]);
-      });
+      }, Sim.sugars);
     }
     
     this.goToApple = function(apple, parent) {
-      gotoHelper(apple, 10, function() {
+      gotoHelper(apple, Optionen.ApfelRadius, function() {
         API.callUserFunc("ApfelErreicht", [apple]);
-      })
+      }, Sim.apples)
     }
     
     this.goToPos = function(pos, parent) {
@@ -948,7 +952,7 @@
     
     this.goToHome = function(parent) {
       var hill = Sim.hills[playerid];
-      gotoHelper(hill, 10, function() {
+      gotoHelper(hill, Optionen.BauErreichtRadius, function() {
         reachedHome();
         API.callUserFunc("BauErreicht", [hill]);
       });
@@ -1126,8 +1130,8 @@
           var e = arguments[i];
           if (typeof e == "object" && e.constructor.name == "SimObject") {
             args.push(e.get(Sim));
-          }
-          args.push(e);
+          } else
+            args.push(e);
         }
         return f.apply(undefined, args);
       }
@@ -1167,63 +1171,6 @@
   }
   
   var API = new APIWrapper();
-
-  am.LadeAmeise = function(ant) {
-    // verify ants here
-    if (API.ants.length < Optionen.MaximaleSpieler) {
-      API.ants.push(ant);
-    }
-  }
-  
-  am.NeueAmeise = function (name) {
-    var newAnt = {Name:name};
-    am.LadeAmeise(newAnt);
-    return newAnt;
-  }
-  
-  am._abortSimulation = function () {
-    var error =  document.createElement("DIV");
-    error.innerHTML = "Simulationsfehler";
-    error.style.color = "red";
-    error.style.marginTop = "20px";
-    error.style.marginLeft = "50px";
-    error.style.fontWeight = "bold";
-    document.getElementById("hud").appendChild(error);
-    throw "Simulationsfehler";
-  }
-  
-  global.ZUCKER = SUGAR;
-  global.BAU = HILL;
-  global.APFEL = APPLE;
-  global.POSITION = POSITION;
-  
-  API.antProp('Ziel', function(){
-    return API.curAnt.getDestination();
-  });
-  API.antProp('Untätig', function(){return API.curAnt.getJobs().length == 0;});
-  API.antProp('ZuckerLast', function(){return API.curAnt.getLoad();});
-  API.antProp('Blickrichtung', function(){return API.curAnt.getHeading();});
-  API.antProp('Sichtweite', function(){return API.curAnt.getRange();});
-  API.antProp('MaximaleLast', function(){return API.curAnt.getMaxLoad();});
-  API.antProp('MaximaleGeschwindigkeit', function(){return API.curAnt.getMaxSpeed();});
-  API.antProp('Reichweite', function(){return API.curAnt.getMaxDistance();});
-  API.antProp('ZurückgelegteStrecke', function(){return API.curAnt.getLap();});
-  API.antProp('Energie', function(){return API.curAnt.getEnergy();});
-  API.antProp('MaximaleEnergie', function(){return API.curAnt.getMaxEnergy();});
-  API.antProp('Bau', function(){return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
-  API.antProp('GetragenerApfel', function(){
-    var jobs = API.curAnt.getJobs();
-    if (jobs.length > 0) {
-      var curJob = jobs[jobs.length - 1];
-      if (curJob.type == "APPLE") {
-        return API.pushObj(curJob.value);
-      }
-    }
-    return undefined;
-  });
-  API.antProp('Position', function(){
-    return new Position(API.curAnt.getPos());
-  });
   
   API.addFunc("Gehe", function (schritte) {
     if (typeof schritte !== "number" || schritte < 0) {
@@ -1301,167 +1248,234 @@
       API.curAnt.addWaitJob(runden);
   });
   
+  API.addFunc("DreheZuObjekt", function (objekt) {
+    if (!(typeof objekt == "object") || !("getPos" in objekt)) {
+      API.message("Die Funktion 'DreheZuObjekt(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
+      return;
+    }
+    var angle = getDir(API.curAnt.getPos(), objekt.getPos());
+    API.curAnt.addTurnToJob(angle);
+  })
+  
+  API.addFunc("DreheWegVonObjekt", function (objekt) {
+    if (!(typeof objekt == "object") || !("getPos" in objekt)) {
+      API.message("Die Funktion 'DreheWegVonObjekt(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
+      return;
+    }
+    var angle = (getDir(API.curAnt.getPos(), objekt.getPos()) + 180) % 360;
+    API.curAnt.addTurnToJob(angle);
+  })
+  
   API.addFunc("GeheZuZiel", function (ziel)  {
-    var obj = ziel;
-    if (obj.constructor.name == "Sugar")
-      API.curAnt.goToSugar(obj);
-    if (obj.constructor.name == "Hill")
-      API.curAnt.goToHome();
-    if (obj.constructor.name == "Apple")
-      API.curAnt.goToApple(obj);
+    if (ziel.constructor.name == "Sugar")
+      return API.curAnt.goToSugar(ziel);
+    if (ziel.constructor.name == "Hill")
+      return API.curAnt.goToHome();
+    if (ziel.constructor.name == "Apple")
+      return API.curAnt.goToApple(ziel);
     if (ziel.constructor.name == "Position")
-      API.curAnt.goToPos(obj);
+      return API.curAnt.goToPos(ziel);
+     API.message("Die Funktion 'GeheZuZiel(ziel)' konnte das unbekannte Ziel nicht anvisieren.");
   });
   
-  global.Nimm = function(obj) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("BestimmeEntfernung", function (a, b) {
+    if (!(typeof a == "object") || !("getPos" in a) || !(typeof b == "object") || !("getPos" in b)) {
+      API.message("Die Funktion 'BestimmeEntfernung(a, b)' konnte für die übergebenen Objekte keine Position bestimmen.");
       return;
-    var obj = API.getObj(obj);
-    if (obj.constructor.name == "Sugar")
-      API.curAnt.addTakeJob(obj);
-  }
+    }
+    return Math.round(dist(a.getPos(), b.getPos()));
+  });
   
-  global.DreheWegVon = function(obj) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("BestimmeRichtung", function (a, b) {
+    if (!(typeof a == "object") || !("getPos" in a) || !(typeof b == "object") || !("getPos" in b)) {
+      API.message("Die Funktion 'BestimmeRichtung(a, b)' konnte für die übergebenen Objekte keine Position bestimmen.");
       return;
-    if (obj.constructor.name != "Position")
-      obj = API.getObj(obj);
-    var angle = (getDir(API.curAnt.getPos(), obj.getPos()) + 180) % 360;
-    API.curAnt.addTurnToJob(angle);
-  }
+    }
+    return Math.round(getDir(a.getPos(), b.getPos()));
+  });
   
-  global.RiecheNachZucker = function() {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("BestimmePosition", function(objekt) {
+    if (!(typeof objekt == "object") || !("getPos" in objekt)) {
+      API.message("Die Funktion 'BestimmePosition(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
       return;
+    }
+    return new Position(obj.getPos());
+  })
+  
+  API.addFunc("NimmZucker", function (zucker) {
+    if (zucker.constructor.name !== "Sugar") {
+      API.message("Die Funktion 'NimmZucker(zucker)' erwartet als Argument einen Zuckerobjekt.");
+      return;
+    }
+    API.curAnt.addTakeJob(zucker);
+  })
+  
+  API.addFunc("LasseZuckerFallen", function() {
+    if (API.curAnt.getLoad() > 0) {
+      API.curAnt.addDropJob();
+    }
+  });
+  
+  API.addFunc("BrauchtNochTräger", function (apfel) {
+    if (apfel.constructor.name !== "Apple") {
+      API.message("Die Funktion 'BrachtNochTräger(apfel)' erwartet als Argument einen Apfelobjekt.");
+      return;
+    }
+    return apfel.needHelp(API.curAnt);
+  })
+  
+  API.addFunc("BringeApfelZuBau", function (apfel) {
+    if (apfel.constructor.name !== "Apple") {
+      API.message("Die Funktion 'BringeApfelZuBau(apfel)' erwartet als Argument einen Apfelobjekt.");
+      return;
+    }
+    API.curAnt.addAppleJob(apfel);
+    API.curAnt.goToHome();
+  });
+  
+  API.addFunc("RiecheNachZucker", function () {
     var sugar = closest(API.curAnt.getPos(), Sim.sugars, API.curAnt.getRange());
     if (sugar)
       return API.pushObj(sugar);
     else
       return undefined;
-  }
+  });
   
-  global.RiecheNachApfel = function() {
-    if (API.staticPlayerId == undefined)
-      return;
+  API.addFunc("RiecheNachApfel", function () {
     var apple = closest(API.curAnt.getPos(), Sim.apples, API.curAnt.getRange());
     if (apple)
       return API.pushObj(apple);
     else
       return undefined;
-  }
+  });
   
-  global.RiecheNachWanze = function() {
-    if (API.staticPlayerId == undefined)
-      return;
+  API.addFunc("RiecheNachWanze", function () {
     var bug = closest(API.curAnt.getPos(), Sim.bugs, API.curAnt.getRange());
     if (bug)
       return API.pushObj(bug);
     else
       return undefined;
-  }
-
-  global.BestimmeEntfernung = function(a, b) {
-    if (API.staticPlayerId == undefined)
-      return;
-    if (a.constructor.name != "Position")
-      a = API.getObj(a);
-    if (b.constructor.name != "Position")
-      b = API.getObj(b);
-    if (a === undefined || b === undefined)
-      return;
-    return dist(a.getPos(), b.getPos());
-  }
+  });
   
-  global.BestimmeWinkel = function(a, b) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("FühreAus", function (funktion) {
+    if (typeof funktion != "function") {
+      API.message("Die Funktion 'FühreAus(funktion)' erwartet als Argument eine Funktion.");
       return;
-    if (a.constructor.name != "Position")
-      a = API.getObj(a);
-    if (b.constructor.name != "Position")
-      b = API.getObj(b);
-    if (a === undefined || b === undefined)
-      return;
-    return getDir(a.getPos(), b.getPos());    
-  }
-  
-  global.BestimmePosition = function(obj) {
-    if (API.staticPlayerId == undefined)
-      return;
-    obj = API.getObj(obj);
-    if (obj === undefined || !("getPos" in obj))
-      return undefined;
-    return new Position(obj.getPos());
-  }
-  
-  global.LasseZuckerFallen = function() {
-    if (API.staticPlayerId == undefined)
-      return;
-    API.curAnt.addDropJob();
-  }
-  
-  global.FühreAus = function(f) {
-    if (API.staticPlayerId == undefined)
-      return;
-    API.curAnt.addCustomJob(f);
-  }
-  
-  global.BringeApfelZuBau = function(obj) {
-    if (API.staticPlayerId == undefined)
-      return;
-    var apple = API.getObj(obj);
-    API.curAnt.addAppleJob(apple);
-    API.curAnt.goToHome();
-  }
-  
-  global.BrauchtNochTräger = function(obj) {
-    if (API.staticPlayerId == undefined)
-      return;
-    var apple = API.getObj(obj);
-    return apple.needHelp(API.curAnt);
-  }
-  
-  global.Merke = function(key, val) {
-    if (API.staticPlayerId == undefined)
-      return;
-    var akey = API.curAnt.getKey();
-    if (!(akey in Sim.memories)) {
-      Sim.memories[akey] = {};
     }
-    Sim.memories[akey][key] = val;
-  }
+    API.curAnt.addCustomJob(funktion);
+  })
   
-  global.HatErinnerung = function(key) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("Merke", function(schlüssel, wert) {
+    if (!(typeof schlüssel == "string") || schlüssel.length <= 0) {
+      API.message("Die Funktion 'Merke(schlüssel, wert)' erwartet als erstes Argument eine Zeichenkette.");
       return;
-    var akey = API.curAnt.getKey();
-    if (akey in Sim.memories) {
-      return key in Sim.memories[akey];
+    }
+    var key = API.curAnt.getKey();
+    if (!(key in Sim.memories)) {
+      Sim.memories[key] = {};
+    }
+    Sim.memories[key][schlüssel] = wert;
+  });
+  
+  API.addFunc("Erinnere", function(schlüssel) {
+    if (!(typeof schlüssel == "string") || schlüssel.length <= 0) {
+      API.message("Die Funktion 'Erinnere(schlüssel)' erwartet als Argument eine Zeichenkette.");
+      return;
+    }
+    var key = API.curAnt.getKey();
+    if (key in Sim.memories && schlüssel in Sim.memories[key]) {
+      return Sim.memories[key][schlüssel];
+    }
+    API.message("Die Funktion 'Erinnere(schlüssel)' konnte den übergebenen Schlüssel nicht finden.");
+  })
+  
+  API.addFunc("HatErinnerung", function (schlüssel) {
+    if (!(typeof schlüssel == "string") || schlüssel.length <= 0) {
+      API.message("Die Funktion 'Erinnere(schlüssel)' erwartet als Argument eine Zeichenkette.");
+      return;
+    }
+    var key = API.curAnt.getKey();
+    if (key in Sim.memories) {
+      return schlüssel in Sim.memories[key];
     }
     return false;
-  }
+  })
   
-  global.Erinnere = function(key) {
-    if (API.staticPlayerId == undefined)
+  API.addFunc("Vergesse", function (schlüssel) {
+    if (!(typeof schlüssel == "string") || schlüssel.length <= 0) {
+      API.message("Die Funktion 'Vergesse(schlüssel)' erwartet als Argument eine Zeichenkette.");
       return;
-    var akey = API.curAnt.getKey();
-    if (akey in Sim.memories) {
-      return Sim.memories[akey][key];
+    }
+    var key = API.curAnt.getKey();
+    if (key in Sim.memories && schlüssel in Sim.memories[key]) {
+      delete Sim.memories[key][schlüssel];
+    }
+  });
+  
+  global.ZUCKER = SUGAR;
+  global.BAU = HILL;
+  global.APFEL = APPLE;
+  global.POSITION = POSITION;
+  
+  API.antProp('Ziel', function(){
+    return API.curAnt.getDestination();
+  });
+  API.antProp('Untätig', function(){return API.curAnt.getJobs().length == 0;});
+  API.antProp('ZuckerLast', function(){return API.curAnt.getLoad();});
+  API.antProp('Blickrichtung', function(){return API.curAnt.getHeading();});
+  API.antProp('Sichtweite', function(){return API.curAnt.getRange();});
+  API.antProp('MaximaleLast', function(){return API.curAnt.getMaxLoad();});
+  API.antProp('MaximaleGeschwindigkeit', function(){return API.curAnt.getMaxSpeed();});
+  API.antProp('Reichweite', function(){return API.curAnt.getMaxDistance();});
+  API.antProp('ZurückgelegteStrecke', function(){return API.curAnt.getLap();});
+  API.antProp('Energie', function(){return API.curAnt.getEnergy();});
+  API.antProp('MaximaleEnergie', function(){return API.curAnt.getMaxEnergy();});
+  API.antProp('Bau', function(){return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
+  API.antProp('GetragenerApfel', function(){
+    var jobs = API.curAnt.getJobs();
+    if (jobs.length > 0) {
+      var curJob = jobs[jobs.length - 1];
+      if (curJob.type == "APPLE") {
+        return API.pushObj(curJob.value);
+      }
     }
     return undefined;
+  });
+  
+  API.antProp('Position', function(){
+    return new Position(API.curAnt.getPos());
+  });
+
+  am.LadeAmeise = function(ant) {
+    // verify ants here
+    if (API.ants.length < Optionen.MaximaleSpieler) {
+      API.ants.push(ant);
+    }
   }
   
-  global.Vergesse = function(key) {
-    if (API.staticPlayerId == undefined)
-      return;
-    var akey = API.curAnt.getKey();
-    if (akey in Sim.memories && key in Sim.memories[akey]) {
-      delete Sim.memories[akey][key];
-    }    
+  am.NeueAmeise = function (name) {
+    var newAnt = {Name:name};
+    am.LadeAmeise(newAnt);
+    return newAnt;
+  }
+  
+  am._abortSimulation = function () {
+    var error =  document.createElement("DIV");
+    error.innerHTML = "Simulationsfehler";
+    error.style.color = "red";
+    error.style.marginTop = "20px";
+    error.style.marginLeft = "50px";
+    error.style.fontWeight = "bold";
+    document.getElementById("hud").appendChild(error);
+    throw "Simulationsfehler";
   }
 
-  // vor debugging purposes
-  global.Sim = Sim;
-  global.Vw = vw;
+  // for debugging purposes
+  if (Optionen.EntwicklerModus) {
+    am.Sim = Sim;
+    am.Vw = vw;
+    am.Optionen = Optionen;
+  }
 
 
 

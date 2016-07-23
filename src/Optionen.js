@@ -15,6 +15,7 @@
     , HügelStreifenBreite : 100
     , EckenAbstand : 300
     , HügelRadius : 40
+    , BauErreichtRadius : 10
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
     , ZuckerGröße : 100
@@ -39,6 +40,9 @@
     , ÄpfelProSpieler : 1
     , AmeisenFürApfel : 4
     , MaximumAmeisenFürApfel : 20
+    , ApfelMinGeschwindigkeit : 0.2
+    , ApfelMaxGeschwindigkeit : 1.0
+    , ApfelRadius : 10
     , PunkteProApfel : 1000
     , AnfangsEnergie : 4000
     , EnergieFürAmeise : 200
@@ -55,6 +59,7 @@
     , WanzeSichtweite : 60
     , WanzenHügelAbstand : 250
     , ZufallRichtungsVerschiebung : 11
+    , EntwicklerModus : true
   }
  
   //export

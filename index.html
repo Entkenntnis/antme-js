@@ -118,7 +118,7 @@ Ameise.SiehtApfel = function(apfel){
 
 // Ameise hat Zuckerhaufen erreicht
 Ameise.ZuckerErreicht = function(zucker){
-    Nimm(zucker);
+    NimmZucker(zucker);
     FühreAus(function(){
       if (ZuckerLast < 2)
           Stopp();
