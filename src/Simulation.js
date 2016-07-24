@@ -1302,9 +1302,9 @@
     return new Position(obj.getPos());
   })
   
-  API.addFunc("NimmZucker", function (zucker) {
+  API.addFunc("Nimm", function (zucker) {
     if (zucker.constructor.name !== "Sugar") {
-      API.message("Die Funktion 'NimmZucker(zucker)' erwartet als Argument einen Zuckerobjekt.");
+      API.message("Die Funktion 'Nimm(zucker)' erwartet als Argument einen Zuckerobjekt.");
       return;
     }
     API.curAnt.addTakeJob(zucker);
