@@ -556,6 +556,10 @@
       vw.bugStore.get(key).rotation.y = -heading / 180 * Math.PI + Math.PI;
     }
     
+    this.getPos = function() {
+      return pos;
+    }
+    
     this.update = function() {
       var ant = closest(pos, Sim.ants, Optionen.WanzenKampfweite);
       if (ant !== undefined) {
@@ -1297,7 +1301,7 @@
       API.message("Die Funktion 'BestimmePosition(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
       return;
     }
-    return new Position(obj.getPos());
+    return new Position(objekt.getPos());
   })
   
   API.addFunc("Nimm", function (zucker) {

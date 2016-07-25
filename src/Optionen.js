@@ -18,7 +18,7 @@
     , BauErreichtRadius : 10
     , SpielerFarben : [0xff0000, 0x00ff00, 0x0000ff, 0x00ffff,
                        0xffff00, 0xff00ff, 0xffffff, 0x000000]
-    , ZuckerGröße : 100
+    , ZuckerGröße : 250
     , ZuckerVergrößerung : 0.1
     , NahrungMindestEntfernung : 300
     , NahrungMaximalEntfernung : 50000
@@ -54,9 +54,9 @@
     , AmeisenEnergie : 60
     , WanzenKampfweite : 12
     , WanzenAngriff : 10
-    , WanzeDrehgeschwindigkeit : 5
+    , WanzeDrehgeschwindigkeit : 3
     , WanzeGeschwindigkeit : 1
-    , WanzeSichtweite : 60
+    , WanzeSichtweite : 30
     , WanzenHügelAbstand : 250
     , ZufallRichtungsVerschiebung : 11
     , EntwicklerModus : true
