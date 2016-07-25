@@ -1,5 +1,3 @@
-
-
 // encapsulate our project
 (function (vw, Optionen, global, am) {
   "use strict";
@@ -1417,20 +1415,54 @@
   global.APFEL = APPLE;
   global.POSITION = POSITION;
   
-  API.antProp('Ziel', function(){
+  API.antProp('AktuellesZiel', function(){
     return API.curAnt.getDestination();
   });
-  API.antProp('Untätig', function(){return API.curAnt.getJobs().length == 0;});
-  API.antProp('ZuckerLast', function(){return API.curAnt.getLoad();});
-  API.antProp('Blickrichtung', function(){return API.curAnt.getHeading();});
-  API.antProp('Sichtweite', function(){return API.curAnt.getRange();});
-  API.antProp('MaximaleLast', function(){return API.curAnt.getMaxLoad();});
-  API.antProp('MaximaleGeschwindigkeit', function(){return API.curAnt.getMaxSpeed();});
-  API.antProp('Reichweite', function(){return API.curAnt.getMaxDistance();});
-  API.antProp('ZurückgelegteStrecke', function(){return API.curAnt.getLap();});
-  API.antProp('Energie', function(){return API.curAnt.getEnergy();});
-  API.antProp('MaximaleEnergie', function(){return API.curAnt.getMaxEnergy();});
-  API.antProp('Bau', function(){return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);});
+  
+  API.antProp('Untätig', function(){
+    return API.curAnt.getJobs().length == 0;
+  });
+  
+  API.antProp('AktuelleEnergie', function(){
+    return API.curAnt.getEnergy();
+  });
+  
+  API.antProp('AktuelleLast', function(){
+    return API.curAnt.getLoad();
+  });
+  
+  API.antProp('AktuelleReichweite', function(){
+    return API.curAnt.getMaxDistance() - API.curAnt.getLap();
+  });
+  
+  API.antProp('Blickrichtung', function(){
+    return API.curAnt.getHeading();
+  });
+  
+  API.antProp('AmeisenSichtweite', function(){
+    return API.curAnt.getRange();
+  });
+  
+  API.antProp('MaximaleLast', function(){
+    return API.curAnt.getMaxLoad();
+  });
+  
+  API.antProp('MaximaleGeschwindigkeit', function(){
+    return API.curAnt.getMaxSpeed();
+  });
+  
+  API.antProp('AmeisenReichweite', function(){
+    return API.curAnt.getMaxDistance();
+  });
+  
+  API.antProp('MaximaleEnergie', function(){
+    return API.curAnt.getMaxEnergy();
+  });
+  
+  API.antProp('HeimatBau', function(){
+    return API.pushObj(Sim.hills[API.curAnt.getPlayerid()]);
+  });
+  
   API.antProp('GetragenerApfel', function(){
     var jobs = API.curAnt.getJobs();
     if (jobs.length > 0) {

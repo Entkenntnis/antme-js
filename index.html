@@ -55,31 +55,19 @@ Davidmeise.ApfelErreicht = function(apfel) {
 }
 
 Davidmeise.Tick = function(){
-  if (!Ziel &&!HatErinnerung("Müde")) {
-    /*var zucker = RiecheNachZucker();
-    if (zucker) {
-      GeheZuZiel(zucker);
-      Nimm(zucker);
-      GeheSchritte(100);
-      Warte(60);
-      FühreAus(function (){
-        if (ZuckerLast < 3)
-          Stop();
-      });
-      GeheZuZiel(Bau);
-    }*/
+  if (!AktuellesZiel &&!HatErinnerung("Müde")) {
     var apfel = RiecheNachApfel();
     if (apfel && BrauchtNochTräger(apfel)) {
       GeheZuZiel(apfel);
       Vergesse("Nummer");
     }
   }
-  if (Reichweite - ZurückgelegteStrecke < 1000 && !HatErinnerung("Müde")) {
+  if (AktuelleReichweite < 1000 && !HatErinnerung("Müde")) {
     //console.log("tired")
     GeheZuBau();
     Merke("Müde");
   }
-  if (BestimmeEntfernung(this, Bau) > 500) {
+  if (BestimmeEntfernung(this, HeimatBau) > 500) {
     GeheZuBau();
   }
   if (Untätig) {
@@ -120,7 +108,7 @@ Ameise.SiehtApfel = function(apfel){
 Ameise.ZuckerErreicht = function(zucker){
     Nimm(zucker);
     FühreAus(function(){
-      if (ZuckerLast < 2)
+      if (AktuelleLast < 2)
           Stopp();
     });
     GeheZuBau();
@@ -149,7 +137,7 @@ Ameise.IstGestorben = function(){
 
 // Wird bedingungslos jede Runde aufgerufen
 Ameise.Tick = function(){
-    if (Reichweite - ZurückgelegteStrecke < 1500 && !HatErinnerung("Müde")) {
+    if (AktuelleReichweite < 1500 && !HatErinnerung("Müde")) {
     	GeheZuBau();
         Merke("Müde");
     }
