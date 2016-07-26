@@ -3,8 +3,7 @@
 
 var AntMe = {};
 
-(function(am) {
-  
+(function() {  
   "use strict";
   // project-wide variables
   var scene, camera, renderer, stats, controls, manager;
@@ -271,6 +270,6 @@ var AntMe = {};
   var vw = new ViewController();
   
   // export
-  am._vw = vw;
-  am.StarteSimulation = init;
-})(AntMe);
+  AntMe._vw = vw;
+  AntMe.StarteSimulation = init;
+})();

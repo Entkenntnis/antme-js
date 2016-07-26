@@ -2,7 +2,7 @@
 
 // TONS OF options to tune
 
-(function(am){
+(function(){
   "use strict";
   
  var Optionen = {
@@ -63,5 +63,5 @@
   }
  
   //export
-  am._optionen = Optionen;
-})(AntMe);
+  AntMe._optionen = Optionen;
+})();

@@ -1,6 +1,11 @@
 // encapsulate our project
-(function (vw, Optionen, global, am) {
+(function () {
   "use strict";
+  
+  var vw = AntMe._vw;
+  var Optionen = AntMe._optionen;
+  var global = window;
+  var am = AntMe;
 
 // protected helper functions
 
@@ -876,6 +881,9 @@
       var apple = _apple;
       var setup = false;
       var cb = function() {
+        var d = dist(this, apple);
+        if (d > 11)
+          return true;
         var index = Sim.apples.indexOf(apple);
         if (index < 0) {
           return true;
@@ -1519,4 +1527,4 @@
   am._sim = Sim;
 
 
-})(AntMe._vw, AntMe._optionen, window, AntMe);
+})();

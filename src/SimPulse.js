@@ -2,8 +2,13 @@
 
 // START OF simulation pulsing: start, stop, interval, end
 
-(function (am, vw, Sim, Optionen) {
+(function () {
   "use strict";
+  
+  var am = AntMe;
+  var vw = AntMe._vw;
+  var Sim = AntMe._sim;
+  var Optionen = AntMe._optionen;
   
   var SimPulse = {
       running : false
@@ -63,4 +68,4 @@
   delete am._sim;
   delete am._optionen;
 
-})(AntMe, AntMe._vw, AntMe._sim, AntMe._optionen);
+})();
