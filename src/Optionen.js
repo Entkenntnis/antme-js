@@ -41,8 +41,8 @@
     , AmeisenFürApfel : 4
     , MaximumAmeisenFürApfel : 20
     , ApfelMinGeschwindigkeit : 0.2
-    , ApfelMaxGeschwindigkeit : 1.0
-    , ApfelRadius : 10
+    , ApfelMaxGeschwindigkeit : 2.0
+    , ApfelRadius : 5
     , PunkteProApfel : 1000
     , AnfangsEnergie : 4000
     , EnergieFürAmeise : 200

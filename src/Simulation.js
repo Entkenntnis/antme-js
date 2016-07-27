@@ -877,11 +877,37 @@
       this.addJob(new Job("TURNTO", angle, cb));
     }
     
+    this.addSendMsgJob = function(_topic, _value) {
+      var cb = function() {
+        if (dist(this.getPos(), Sim.hills[playerid].getPos()) < Optionen.HügelRadius) {
+          var curAnts = [];
+          Sim.ants.forEach(function (ant) {
+            if (ant.getPlayerid() != playerid)
+              return;
+            if (dist(ant.getPos(), Sim.hills[playerid].getPos()) < Optionen.AmeiseSichtweite)
+              curAnts.push(ant);
+          });
+          curAnts.forEach(function (ant) {
+            var bkup = API.curAnt;
+            if (bkup !== undefined)
+              API.close();
+            API.setAnt(ant);
+            API.callUserFunc("EmpfängtNachricht", [_topic, _value]);
+            API.close();
+            if (bkup !== undefined)
+              API.setAnt(bkup);
+          })
+        }
+        return true;
+      }; 
+      this.addJob(new Job("SEND", {topic:_topic,value:_value}, cb));
+    }
+    
     this.addAppleJob = function(_apple) {
       var apple = _apple;
       var setup = false;
       var cb = function() {
-        var d = dist(this, apple);
+        var d = dist(this.getPos(), apple.getPos());
         if (d > 11)
           return true;
         var index = Sim.apples.indexOf(apple);
@@ -894,7 +920,7 @@
           return false;
         }
         if (apple.ants.indexOf(this) < 0) {
-          this.stop();
+          this.goToHome();
           return true;
         }
         heading = apple.heading;
@@ -1309,7 +1335,7 @@
       API.message("Die Funktion 'BestimmePosition(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
       return;
     }
-    return new Position(objekt.getPos());
+    return new Position({x:objekt.getPos().x,y:objekt.getPos().y});
   })
   
   API.addFunc("Nimm", function (zucker) {
@@ -1380,6 +1406,14 @@
       API.message("Die Funktion 'Merke(schlüssel, wert)' erwartet als erstes Argument eine Zeichenkette.");
       return;
     }
+    if (wert !== undefined) {
+      if (wert.constructor.name == "Apple" || wert.constructor.name == "Sugar" ||
+          wert.constructor.name == "Bug" || wert.constructor.name == "Hill") {
+        API.message("Die Funktion 'Merke(schlüssel, wert)' kann als Wert kein Sichtungsobjekt speichern.");
+        return;
+      }
+    }
+    
     var key = API.curAnt.getKey();
     if (!(key in Sim.memories)) {
       Sim.memories[key] = {};
@@ -1420,6 +1454,14 @@
     if (key in Sim.memories && schlüssel in Sim.memories[key]) {
       delete Sim.memories[key][schlüssel];
     }
+  });
+  
+  API.addFunc("SendeNachricht", function(betreff, wert) {
+    if (!(typeof betreff == "string") || betreff.length <= 0) {
+      API.message("Die Funktion 'SendeNachricht(betreff, wert)' erwartet als erstes Argument eine Zeichenkette.");
+      return;
+    }
+    API.curAnt.addSendMsgJob(betreff, wert);
   });
   
   global.ZUCKER = SUGAR;
