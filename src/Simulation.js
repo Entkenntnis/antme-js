@@ -624,6 +624,7 @@
     var lap = 0;
     var maxEnergy = Optionen.AmeisenEnergie;
     var energy = maxEnergy;
+    var previousBug = undefined;
     vw.setAntBodyColor(vw.antStore.get(key), Optionen.SpielerFarben[playerid]);
     updateGO();
     
@@ -1022,6 +1023,16 @@
         if (apple != undefined) {
           API.callUserFunc("SiehtApfel", [apple]);
         }
+      }
+      
+      var bug = closest(pos, Sim.bugs, range);
+      if (bug) {
+        if (bug != previousBug) {
+          API.callUserFunc("SiehtWanze", [bug]);
+          previousBug = bug;
+        }
+      } else {
+        previousBug = undefined;
       }
       
       if(this.getJobs().length == 0) {
