@@ -622,6 +622,7 @@
     var insertionPoint = 0;
     var maxDistance = Optionen.AmeisenReichweite;
     var lap = 0;
+    var tired = false;
     var maxEnergy = Optionen.AmeisenEnergie;
     var energy = maxEnergy;
     var previousBug = undefined;
@@ -763,6 +764,7 @@
       Sim.players[playerid].addSugar(load);
       load = 0;
       lap = 0;
+      tired = false;
       energy = maxEnergy;
     }
     
@@ -1035,6 +1037,13 @@
         previousBug = undefined;
       }
       
+      if (lap > Optionen.AmeisenReichweite * 2 / 3) {
+        if (!tired) {
+          API.callUserFunc("WirdMüde");
+          tired = true;
+        }
+      }
+      
       if(this.getJobs().length == 0) {
         API.callUserFunc("Wartet");
       }
@@ -1197,7 +1206,7 @@
   
   // Position
   function Position(_pos) {
-    var pos = _pos;
+    var pos = {x:_pos.x,y:_pos.y};
     this.getPos = function() {
       return pos;
     }
@@ -1346,7 +1355,7 @@
       API.message("Die Funktion 'BestimmePosition(objekt)' konnte für das übergebene Objekt keine Position bestimmen.");
       return;
     }
-    return new Position({x:objekt.getPos().x,y:objekt.getPos().y});
+    return API.pushObj(new Position(objekt.getPos()));
   })
   
   API.addFunc("Nimm", function (zucker) {
@@ -1540,7 +1549,7 @@
   });
   
   API.antProp('Position', function(){
-    return new Position(API.curAnt.getPos());
+    return API.pushObj(new Position(API.curAnt.getPos()));
   });
 
   am.LadeAmeise = function(ant) {

@@ -28,7 +28,7 @@
     , ZuckerProSpieler : 1.5
     , AmeiseWartezeit : 30
     , AmeisenMaximum : 100
-    , AmeiseGeschwindigkeit : 4
+    , AmeiseGeschwindigkeit : 5
     , AmeiseDrehgeschwindigkeit : 8
     , AmeiseSichtweite : 70
     , AmeiseTragkraft : 5
@@ -42,7 +42,7 @@
     , MaximumAmeisenFürApfel : 20
     , ApfelMinGeschwindigkeit : 0.2
     , ApfelMaxGeschwindigkeit : 2.0
-    , ApfelRadius : 5
+    , ApfelRadius : 7
     , PunkteProApfel : 1000
     , AnfangsEnergie : 4000
     , EnergieFürAmeise : 200
