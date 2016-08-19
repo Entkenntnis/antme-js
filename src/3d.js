@@ -13,7 +13,7 @@ var AntMe = {};
     scene = new THREE.Scene();
     
     // the floor lies in the xz-plane, don't worry about aspect here, will be done on resize 
-    camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 20000);
+    camera = new THREE.PerspectiveCamera(60, 1 /*aspect*/, 0.1, 200000);
     camera.position.set(0, 600, 1700);
     
     // the worker in the shadow
@@ -139,24 +139,29 @@ var AntMe = {};
       floorTexture.wrapS = THREE.RepeatWrapping;
       floorTexture.wrapT = THREE.RepeatWrapping;
       floorTexture.repeat.set(4, 4);
-      var floorMat = new THREE.MeshPhongMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture, specular:0x333300});
+      var floorMat = new THREE.MeshBasicMaterial({color: 0x888888, side: THREE.DoubleSide, map:floorTexture});
       this.gamefloor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000, 1, 1),floorMat);
       this.gamefloor.rotation.x = Math.PI / 2;
       scene.add(this.gamefloor);
-    
-      // skybox
-      var materialArray = [];
-      var posfixs = ['xpos', 'xneg', 'ypos', 'yneg', 'zpos', 'zneg'];
-      posfixs.forEach(function(val){
-        materialArray.push(new THREE.MeshBasicMaterial({
-          map:textureLoader.load('images/dawnmountain-' + val + '.png'),
-          side:THREE.BackSide}));
+      
+      // ground
+      var groundTexture = textureLoader.load( "images/grass.png" );
+      groundTexture.wrapS = THREE.RepeatWrapping;
+      groundTexture.wrapT = THREE.RepeatWrapping;
+      groundTexture.repeat.set(6, 6);
+      var grass = new THREE.Mesh(new THREE.PlaneGeometry(50000, 50000, 1, 1), new THREE.MeshBasicMaterial({side:THREE.DoubleSide, map:groundTexture}));
+      grass.rotation.x = Math.PI / 2;
+      grass.position.y = -50;
+      scene.add(grass);
+      
+      var skyGeo = new THREE.SphereGeometry(24000, 25, 25);
+      var skyTexture = textureLoader.load( "images/sky.jpg" );
+      var skyMaterial = new THREE.MeshBasicMaterial({ 
+        map: skyTexture,
       });
-      var skyboxMaterial = new THREE.MeshFaceMaterial( materialArray );
-      var skyboxGeom = new THREE.CubeGeometry( 8000, 8000, 8000, 1, 1, 1 );
-      var skybox = new THREE.Mesh( skyboxGeom, skyboxMaterial );
-      this.skybox = skybox;
-      scene.add( skybox );
+      var sky = new THREE.Mesh(skyGeo, skyMaterial);
+      sky.material.side = THREE.BackSide;
+      scene.add(sky);
       
       // light it up
       var ambient = new THREE.AmbientLight( 0x444444 );
